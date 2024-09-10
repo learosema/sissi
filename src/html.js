@@ -31,13 +31,10 @@ export default (config) => {
             // silently fail if there is no include
             includes.set(file, `<html-include src="${file}"/>`);
           }
-        }
-        console.log(includes)      
+        }   
         return inputContent.replace(INCLUDE_REGEX, (_, file) => {
-          console.log(_, file);
           return includes.get(file)
-
-        }) 
+        });
       };
     },
   });

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "demo": "node ./src/cli watch"
+    "demo": "node ./src/cli watch",
+    "build": "node ./src/cli build"
   },
   "bin": "src/cli.js",
   "keywords": [],

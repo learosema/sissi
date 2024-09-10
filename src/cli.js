@@ -40,15 +40,18 @@ async function run() {
   const sissi = new Sissi(config);
   try {
     if (args.has('watch')) {
-      await sissi.watch();  
+      await sissi.watch();
+      return;
     }
     
     if (args.has('serve')) {
       await sissi.serve();
+      return;
     }
     
     if (args.has('build')) {
       await sissi.build();
+      return;
     }
     help();
   } catch (err) {
