@@ -1,14 +1,15 @@
 import { existsSync } from 'node:fs';
-import { mkdir, watch, readFile, writeFile, readdir } from 'node:fs/promises';
+import { mkdir, watch, readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { SissiConfig } from './sissi-config.js';
+import { serve } from './httpd.js';
 
 export class Sissi {
-
   
   constructor(config = null) {
     this.config = config || new SissiConfig();
+    this.dryMode = false;    
   }
 
   /**
@@ -17,14 +18,6 @@ export class Sissi {
   async build() {
     const files = await readdir(path.normalize(this.config.dir.input), {recursive: true});
     for (const file of files) {
-      const includePath = path.join(
-        path.normalize(this.config.dir.input),
-        path.normalize(this.config.dir.includes)
-      );
-      const info = path.parse(file);
-      if (info.dir.startsWith(includePath) || info.base.startsWith('_')) {
-        continue;
-      }
       await this.processFile(file);
     }
   }
@@ -48,7 +41,7 @@ export class Sissi {
     if (! existsSync(inputDir)) {
       throw new Error(`Input directory Not found: ${this.config.dir.input}`);
     }
-    console.info(`Sissi is watching ${this.config.dir.input}`);
+    console.info(`[watch]\tSissi is watching ${this.config.dir.input}`);
     try {
       const watcher = watch(this.config.dir.input, options);
       for await (const event of watcher) {
@@ -72,26 +65,31 @@ export class Sissi {
     }
   }
 
-  async processFile(filename) {
-    console.log(`processing: ${filename}`);
-    const inputFileName = path.resolve(
-      path.normalize(this.config.dir.input), filename);
-    let content = await readFile(inputFileName, 'utf8');
-    let outputFileName = path.resolve(
-      path.normalize(this.config.dir.output), 
-      filename
-    );
+  async processFile(inputFileName) {
 
-    const pattern = /\.(\w+)$/;
-    const match = filename.match(pattern);
-    const extension = match[1];
+    const absInputFileName = path.resolve(this.config.dir.input, inputFileName);
+    if (inputFileName.startsWith('_') || inputFileName.includes(path.sep + '_')) {
+      return;
+    }
+    const stats = await stat(absInputFileName);
+    if (stats.isDirectory()) {
+      return;
+    }
+    let content = await readFile(absInputFileName, 'utf8');
+    const parsed = path.parse(inputFileName);
+    const extension = parsed.ext?.slice(1);
+
+    let ext = null;
     if (this.config.extensions.has(extension)) {
-      const ext = this.config.extensions.get(extension);
-      if (ext.outputFileExtension) {
-        outputFileName = outputFileName.replace(/\.\w+$/, '.' + ext.outputFileExtension);
-      }
+      ext = this.config.extensions.get(extension);
       const processor = await ext.compile(content, inputFileName);
       content = await processor();
+    }
+
+    let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
+    console.log(`[write]\t${outputFileName}`);
+    if (this.dryMode) {
+      return;
     }
     await mkdir(path.parse(outputFileName).dir, {recursive: true});
     await writeFile(outputFileName, content, {});
@@ -100,7 +98,9 @@ export class Sissi {
   /**
    * watch files and run a dev server
    */
-  serve() {
-    throw new Error('Still TODO :)')
+  async serve() {
+    await this.build();
+    serve();
+    this.watch();
   }
 }

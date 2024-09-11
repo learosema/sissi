@@ -39,12 +39,16 @@ function help() {
 async function run() {
   const sissi = new Sissi(config);
   try {
+    if (args.has('--dry')) {
+      sissi.dryMode = true;
+    }
+
     if (args.has('watch')) {
       await sissi.watch();
       return;
     }
     
-    if (args.has('serve')) {
+    if (args.has('dev')) {
       await sissi.serve();
       return;
     }
