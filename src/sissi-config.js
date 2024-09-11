@@ -1,3 +1,7 @@
+import css from "./css.js";
+import html from "./html.js";
+import { defaultNaming } from "./naming.js";
+
 export class SissiConfig {
   
   dir = {
@@ -7,11 +11,14 @@ export class SissiConfig {
   };
 
   watchFileDelta = 500;
+  naming = defaultNaming;
 
   extensions = new Map();
   filters = new Map();
 
   constructor(options = null) {
+    this.addPlugin(html);
+    this.addPlugin(css);
     this.applyConfig(options);
   }
 

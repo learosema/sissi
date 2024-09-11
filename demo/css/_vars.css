@@ -1,0 +1,13 @@
+:root {
+  --bg: #222;
+  --fg: white;
+  --anchor: #7df;
+}
+
+@media screen and (prefers-color-scheme: light) {
+  :root {
+    --bg: #fff;
+    --fg: #222;
+    --anchor: #027;
+  }
+}
