@@ -7,8 +7,10 @@ import { defaultResolver } from '../src/resolver.js';
 describe('defaultResolver', () => {
 
   let config = new SissiConfig({
-    input: 'demo',
-    output: 'dist'
+    dir: {
+      input: 'demo',
+      output: 'dist',
+    }
   });
 
   it('should return a function', () => {
@@ -21,9 +23,7 @@ describe('defaultResolver', () => {
     const resolve = defaultResolver(config);
 
     const content = await resolve('index.html');
-    assert(content.startsWith('<!DOCTYPE html>');
+    assert(content.startsWith('<!DOCTYPE html>'));
   });
-
-
 
 });
