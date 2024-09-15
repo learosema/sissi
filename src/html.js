@@ -1,9 +1,11 @@
-import { readFile } from 'fs/promises';
 import path from 'path';
 
-const INCLUDE_REGEX = /<html-include[\s\r\n]*src="(\w+\.\w+)"[\s\r\n]*\/?>/g;
+import { defaultResolver } from '../src/resolver.js';
+
+const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\.]+)"[\s\r\n]*\/?>/g;
 
 export default (config) => {
+  const resolve = config.resolve || defaultResolver(config);
   config.addTemplateFormats('html');
 
   config.addExtension('html', {
@@ -23,8 +25,8 @@ export default (config) => {
           
           const fullPath = path.join(config.dir.input, config.dir.includes, file);
           try {
-            const content = await readFile(
-              path.join(config.dir.input, config.dir.includes, file), 'utf8');
+            const content = await resolve(
+              path.join(config.dir.input, config.dir.includes, file));
             includes.set(file, content);
           } catch (err) {
             console.error('error processing file:', fullPath, err);
