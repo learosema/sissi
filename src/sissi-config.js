@@ -7,12 +7,15 @@ export class SissiConfig {
   dir = {
     output: 'public',
     includes: '_includes',
+    layouts: '_layouts',
+    data: '_data',
     input: '.',
   };
 
   watchFileDelta = 500;
   naming = defaultNaming;
 
+  templateFormats = new Map();
   extensions = new Map();
   filters = new Map();
 
@@ -43,11 +46,22 @@ export class SissiConfig {
     this.extensions.set(extension, processingFunction);
   }
 
+  /**
+   * Add a filter
+   * @param {string} filter 
+   * @param {function} filterFunction 
+   */
   addFilter(filter, filterFunction) {
     this.filters.add(filter, filterFunction);
   }
 
+  /**
+   * Add extensions as a valid template language to process
+   * @param  {...string} formats 
+   */
   addTemplateFormats(...formats) {
-    // nop.
+    for (const format of formats) {
+      this.templateFormats.set(format);
+    }
   }
 }
