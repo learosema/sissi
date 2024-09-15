@@ -8,9 +8,9 @@ export function defaultResolver(config) {
       const response = await fetch(resource);
       const contentType = response.headers.get('Content-Type');
       if (!contentType || !contentType.startsWith('text')) {
-        return await resource.buffer();
+        return await response.buffer();
       }
-      return await resource.text();
+      return await response.text();
     }
     // otherwise, readFile it.
     return await readFile(path.resolve(config.dir.input, resource), 'utf8');
