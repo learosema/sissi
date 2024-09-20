@@ -1,11 +1,8 @@
 import path from 'path';
-
-import { defaultResolver } from '../src/resolver.js';
-
+import { resolve } from './resolver.js';
 const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\.]+)"[\s\r\n]*\/?>/g;
 
 export default (config) => {
-  const resolve = config.resolve || defaultResolver(config);
   config.addTemplateFormats('html');
 
   config.addExtension('html', {
@@ -25,8 +22,7 @@ export default (config) => {
           
           const fullPath = path.join(config.dir.input, config.dir.includes, file);
           try {
-            const content = await resolve(
-              path.join(config.dir.input, config.dir.includes, file));
+            const content = await resolve(fullPath);
             includes.set(file, content);
           } catch (err) {
             console.error('error processing file:', fullPath, err);

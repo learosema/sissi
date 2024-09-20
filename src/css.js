@@ -1,12 +1,11 @@
 import path from 'path';
 
-import { defaultResolver } from './resolver.js';
+import { resolve } from './resolver.js';
 
 // TODO: add a regex for layer syntax
 const INCLUDE_REGEX = /@import [\"\']([\w:\/\\]+\.css)[\"\'];/g;
 
 export default (config) => {
-  const resolve = config.resolve || defaultResolver(config);
   config.addTemplateFormats('css');
 
   config.addExtension('css', {
@@ -24,10 +23,9 @@ export default (config) => {
         const matches = inputContent.matchAll(INCLUDE_REGEX);
         for (const [, file] of matches) {
           
-          const fullPath = path.join(parsed.dir, file);
+          const fullPath = path.resolve(config.dir.input, parsed.dir, file);
           try {
-            const content = await resolve(
-              fullPath, config);
+            const content = await resolve(fullPath);
             includes.set(file, content);
           } catch (err) {
             console.error('error processing file:', fullPath, err);
