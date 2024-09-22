@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { SissiConfig } from './sissi-config.js';
 import { serve } from './httpd.js';
+import EventEmitter from 'node:stream';
 
 export class Sissi {
   
@@ -24,8 +25,9 @@ export class Sissi {
 
   /**
    * watch
+   * @param {EventEmitter} eventEmitter emitter for change events
    */
-  async watch(watchOptions = null, ignoreList = []) {
+  async watch(eventEmitter = null, watchOptions = null, ignoreList = []) {
     await this.build();
     const lastExec = new Map();
     const options = { recursive: true };
@@ -56,6 +58,9 @@ export class Sissi {
           continue;
         }
         console.log(`[${event.eventType}] ${event.filename}`);
+        if (eventEmitter) {
+          eventEmitter.emit('watch-event', event);
+        }
         await this.processFile(event.filename);
         lastExec.set(event.filename, performance.now());
       }
@@ -99,8 +104,9 @@ export class Sissi {
    * watch files and run a dev server
    */
   async serve() {
+    const eventEmitter = new EventEmitter();
     await this.build();
-    serve();
-    this.watch();
+    serve(eventEmitter);
+    this.watch(eventEmitter);
   }
 }
