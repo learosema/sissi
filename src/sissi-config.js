@@ -1,5 +1,6 @@
 import css from "./css.js";
 import html from "./html.js";
+import md from "./md.js";
 import { defaultNaming } from "./naming.js";
 
 export class SissiConfig {
@@ -22,6 +23,7 @@ export class SissiConfig {
   constructor(options = null) {
     this.addPlugin(html);
     this.addPlugin(css);
+    this.addPlugin(md);
     this.applyConfig(options);
   }
 

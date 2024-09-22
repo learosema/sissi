@@ -114,17 +114,28 @@ export class Sissi {
       const { data: matterData, body } = frontmatter(content);
       content = body;
       const fileData = Object.assign({}, structuredClone(this.data), matterData);
+      const processor = await ext.compile(content, inputFileName);
+      content = template(await processor(fileData))(fileData);
+
       if (fileData.layout) {
+        fileData.content = content;
         const relLayoutDir = path.normalize(
           path.join(this.config.dir.input, this.config.dir.layouts || '_layouts')
         );
         const absLayoutFilePath = path.resolve(relLayoutDir, fileData.layout);
-        const layoutContent = await readFile(absLayoutFilePath, 'utf8');
-        fileData.content = content;
+        const layoutExtKey = path.parse(absLayoutFilePath).ext?.slice(1);
+        let layoutContent = await readFile(absLayoutFilePath, 'utf8');
+        
+        const layoutExt = layoutExtKey ? this.config.extensions.get(layoutExtKey) : null;
+        if (layoutExt) {
+          const processor = await layoutExt.compile(layoutContent, inputFileName);
+          layoutContent = await processor(fileData);
+        } 
+
         content = template(layoutContent)(fileData);
       }
-      const processor = await ext.compile(content, inputFileName);
-      content = template(await processor(fileData))(fileData);
+
+
     }
 
     let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
