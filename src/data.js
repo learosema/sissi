@@ -1,8 +1,8 @@
 import path from 'node:path';
-
-import { SissiConfig } from "./sissi-config";
 import { readdir, readFile } from 'node:fs/promises';
-import { smolYAML } from './transforms/smolyaml';
+
+import { SissiConfig } from "./sissi-config.js";
+import { smolYAML } from './transforms/smolyaml.js';
 
 /**
  * read contents of the data dir into an object
@@ -10,7 +10,7 @@ import { smolYAML } from './transforms/smolyaml';
  * @param {SissiConfig} config 
  */
 export async function readDataDir(config) {
-  const relativeDataDir = path.normalize(path.join(config.dir.input, config.dir.data));
+  const relativeDataDir = path.normalize(path.join(config.dir.input, config.dir.data || '_data'));
   if (relativeDataDir.startsWith('..')) {
     throw new Error('the data dir should not be above the input dir')
   }
@@ -18,17 +18,18 @@ export async function readDataDir(config) {
   const files = await readdir(path.normalize(dataDir), {recursive: true});
   const result = {}
   for (const dataFilePath of files) {
-    const pathInfo = path.parse(dataFilePath);
+    const absPath = path.join(dataDir, dataFilePath);
+    const pathInfo = path.parse(absPath);
     if (pathInfo.ext === '.js') {
-      result[pathInfo.name] = await import(dataFilePath);
+      result[pathInfo.name] = (await import(absPath)).default;
     }
     if (pathInfo.ext === '.json') {
-      result[pathInfo.name] = JSON.parse(await readFile(dataFilePath, 
+      result[pathInfo.name] = JSON.parse(await readFile(absPath, 
         'utf8'
       ));
     }
     if (pathInfo.ext === '.yaml') {
-      result[pathInfo.name] = smolYAML(await readFile(dataFilePath, 'utf8'));
+      result[pathInfo.name] = smolYAML(await readFile(absPath, 'utf8'));
     }
   }
   return result;
