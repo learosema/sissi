@@ -4,6 +4,8 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import path from 'node:path';
 import url from "node:url";
 
+const SSE_POOL = [];
+
 const DEVSERVER_JS = `
 const eventSource = new EventSource('/_dev-events');
 eventSource.addEventListener('message', (e) => {
@@ -13,11 +15,15 @@ eventSource.addEventListener('message', (e) => {
       document.location.reload();
     }
     if (event.filename.endsWith('.css')) {
-      document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+      document.querySelectorAll('link[rel="stylesheet"]:not([data-remove])').forEach(link => {
         const [href, query] = link.getAttribute('href').split('?')
         const params = new URLSearchParams(query);
         params.set('time', new Date().getTime().toString());
-        link.setAttribute('href', href + '?' + params.toString());
+        const newLink = link.cloneNode();
+        newLink.setAttribute('href', href + '?' + params.toString());
+        link.setAttribute('data-remove', '1');
+        document.head.insertBefore(newLink, link);
+        window.setTimeout(() => link.remove(), 50);
       });
     }
   }
@@ -46,7 +52,6 @@ function sendFactory(req, res) {
     res.writeHead(code, { 'Content-Type': mimetype, 'Cache-Control': 'no-cache' });
     res.end(content);
   }
-  
   const sendError = (code, message) => send(code, `${code} ${message}`);
   return { send, sendError };  
 }
@@ -58,16 +63,20 @@ function sendFactory(req, res) {
  * @param {ServerResponse<IncomingMessage>} res 
  * @param {EventEmitter} eventEmitter 
  */
-function serverSentEvents(res, eventEmitter) {
+function serverSentEvents(req, res, eventEmitter) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive'
   });
-  eventEmitter.on('watch-event', (...payload) => {
+  const watchListener = (...payload) => {
     res.write(`data: ${JSON.stringify(payload)}\n\n`)
-  });
+  }
+  
+  eventEmitter.on('watch-event', watchListener);
+  req.on('close', () => eventEmitter.off('watch-event', watchListener));
 }
+
 export function serve(eventEmitter = null, wwwRoot = 'dist') {
   const port = process.env.PORT || 8000;
   console.log(`[http]\tServer listening on http://localhost:${port}/`);
@@ -75,7 +84,7 @@ export function serve(eventEmitter = null, wwwRoot = 'dist') {
     const uri = url.parse(req.url).pathname;
     const { send, sendError } = sendFactory(req, res);
     if (eventEmitter && uri === '/_dev-events') {
-      serverSentEvents(res, eventEmitter);
+      serverSentEvents(req, res, eventEmitter);
       return;
     }
     if (uri === '/_dev-events.js') {
