@@ -115,6 +115,15 @@ export class Sissi {
       const fileData = Object.assign({}, structuredClone(this.data), matterData);
       const processor = await ext.compile(body, inputFileName);
       content = template(await processor(fileData))(fileData);
+      if (fileData.layout) {
+        const relLayoutDir = path.normalize(
+          path.join(this.config.dir.input, this.config.dir.layouts || '_layouts')
+        );
+        const absLayoutFilePath = path.resolve(relLayoutDir, fileData.layout);
+        const layoutContent = await readFile(absLayoutFilePath, 'utf8');
+        fileData.content = content;
+        content = template(layoutContent)(fileData);
+      }
     }
 
     let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
