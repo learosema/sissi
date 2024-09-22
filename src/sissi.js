@@ -5,25 +5,31 @@ import path from 'node:path';
 import { SissiConfig } from './sissi-config.js';
 import { serve } from './httpd.js';
 import EventEmitter from 'node:stream';
+import { readDataDir } from './data.js';
+import { template } from './transforms/template-data.js'
+import { frontmatter } from './transforms/frontmatter.js';
 
 export class Sissi {
   
   constructor(config = null) {
     this.config = config || new SissiConfig();
-    this.dryMode = false;    
+    this.dryMode = false;
+    this.data = null;
   }
 
   /**
    * run a build 
    */
   async build(filter = null, eventEmitter) {
+    if (! this.data) {
+      this.data = await readDataDir(this.config);
+    }
     const files = (await readdir(path.normalize(this.config.dir.input), {recursive: true})).filter(
       (file) => {
         if (! filter) return true;
         if (filter instanceof RegExp) return filter.test(file);
       }
     );
-    
     for (const file of files) {
       await this.processFile(file, eventEmitter);
     }
@@ -34,6 +40,9 @@ export class Sissi {
    * @param {EventEmitter} eventEmitter emitter for change events
    */
   async watch(eventEmitter = null, watchOptions = null, ignoreList = []) {
+    if (! this.data) {
+      this.data = await readDataDir(this.config);
+    }
     await this.build();
     const lastExec = new Map();
     const options = { recursive: true };
@@ -84,7 +93,9 @@ export class Sissi {
   }
 
   async processFile(inputFileName, eventEmitter) {
-
+    if (! this.data) {
+      this.data = await readDataDir(this.config);
+    }
     const absInputFileName = path.resolve(this.config.dir.input, inputFileName);
     if (inputFileName.startsWith('_') || inputFileName.includes(path.sep + '_')) {
       return;
@@ -100,8 +111,10 @@ export class Sissi {
     let ext = null;
     if (this.config.extensions.has(extension)) {
       ext = this.config.extensions.get(extension);
-      const processor = await ext.compile(content, inputFileName);
-      content = await processor();
+      const { data: matterData, body } = frontmatter(content);
+      const fileData = Object.assign({}, structuredClone(this.data), matterData);
+      const processor = await ext.compile(body, inputFileName);
+      content = template(await processor(fileData))(fileData);
     }
 
     let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
