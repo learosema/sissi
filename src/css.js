@@ -25,7 +25,7 @@ export default (config) => {
           
           const fullPath = path.resolve(config.dir.input, parsed.dir, file);
           try {
-            const content = await resolve(fullPath);
+            const content = await (config.resolve || resolve)(fullPath);
             includes.set(file, content);
           } catch (err) {
             console.error('error processing file:', fullPath, err);

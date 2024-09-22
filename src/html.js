@@ -22,7 +22,7 @@ export default (config) => {
           
           const fullPath = path.join(config.dir.input, config.dir.includes, file);
           try {
-            const content = await resolve(fullPath);
+            const content = await (config.resolve || resolve)(fullPath);
             includes.set(file, content);
           } catch (err) {
             console.error('error processing file:', fullPath, err);
