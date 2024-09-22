@@ -1,31 +1,26 @@
 import { describe, it, mock, before, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 
 import { SissiConfig } from '../src/sissi-config.js';
-import { defaultResolver } from '../src/resolver.js';
+import { resolve } from '../src/resolver.js';
 
-describe('defaultResolver', () => {
 
-  let config, resolve;
+describe('resolve', () => {
+
+  let config;
   
-
   before(() => {
     config = new SissiConfig({
       dir: {
         input: 'demo',
         output: 'dist',
       }
-    });
-    resolve = defaultResolver(config);
-  })
-
-
-  it('should return a function', () => {
-    assert.equal(typeof resolve, 'function');
+    });    
   });
 
   it('should resolve files from the local file system', async () => {
-    const content = await resolve('index.html');
+    const content = await resolve(path.join(config.dir.input, 'index.html'));
     assert(content.startsWith('<!DOCTYPE html>'));
   });
 
@@ -47,7 +42,5 @@ describe('defaultResolver', () => {
 
     globalThis.fetch = originalFetch;
   });
-
-
 
 });
