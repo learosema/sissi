@@ -112,9 +112,8 @@ export class Sissi {
     if (this.config.extensions.has(extension)) {
       ext = this.config.extensions.get(extension);
       const { data: matterData, body } = frontmatter(content);
+      content = body;
       const fileData = Object.assign({}, structuredClone(this.data), matterData);
-      const processor = await ext.compile(body, inputFileName);
-      content = template(await processor(fileData))(fileData);
       if (fileData.layout) {
         const relLayoutDir = path.normalize(
           path.join(this.config.dir.input, this.config.dir.layouts || '_layouts')
@@ -124,6 +123,8 @@ export class Sissi {
         fileData.content = content;
         content = template(layoutContent)(fileData);
       }
+      const processor = await ext.compile(content, inputFileName);
+      content = template(await processor(fileData))(fileData);
     }
 
     let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
