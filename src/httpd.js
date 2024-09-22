@@ -4,8 +4,6 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import path from 'node:path';
 import url from "node:url";
 
-const SSE_POOL = [];
-
 const DEVSERVER_JS = `
 const eventSource = new EventSource('/_dev-events');
 eventSource.addEventListener('message', (e) => {
