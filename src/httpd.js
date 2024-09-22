@@ -1,27 +1,49 @@
+import EventEmitter from 'events';
 import { readFile } from 'fs';
-import { createServer, ServerResponse } from 'http';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
 import path from 'node:path';
+import url from "node:url";
 
-function getMime(url) {
-  if (/\.html?$/.test(url)) return 'text/html';
-  if (/\.css$/.test(url)) return 'text/css';
-  if (/\.gif$/.test(url)) return 'image/gif';
-  if (/\.png$/.test(url)) return 'image/png';
-  if (/\.webp$/.test(url)) return 'image/webp';
-  if (/\.jpe?g$/.test(url)) return 'image/jpeg';
-  if (/\.svg$/.test(url)) return 'image/svg+xml';
-  if (/\.xml$/.test(url)) return 'text/xml';
-  if (/\.js$/.test(url)) return 'text/javascript';
-  if (/\.json$/.test(url)) return 'application/json';
-  if (/\.midi?$/.test(url)) return 'audio/midi';
-  if (/\.ico$/.test(url)) return 'image/vnd.microsoft.icon';
+const DEVSERVER_JS = `
+const eventSource = new EventSource('/_dev-events');
+eventSource.addEventListener('message', (e) => {
+  const events = JSON.parse(e.data);
+  for (const event of events) {
+    if (event.filename.endsWith('.html')) {
+      document.location.reload();
+    }
+    if (event.filename.endsWith('.css')) {
+      document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+        const [href, query] = link.getAttribute('href').split('?')
+        const params = new URLSearchParams(query);
+        params.set('time', new Date().getTime().toString());
+        link.setAttribute('href', href + '?' + params.toString());
+      });
+    }
+  }
+});
+`
+
+function getMime(path) {
+  if (/\.html?$/.test(path)) return 'text/html';
+  if (/\.css$/.test(path)) return 'text/css';
+  if (/\.gif$/.test(path)) return 'image/gif';
+  if (/\.png$/.test(path)) return 'image/png';
+  if (/\.webp$/.test(path)) return 'image/webp';
+  if (/\.jpe?g$/.test(path)) return 'image/jpeg';
+  if (/\.svg$/.test(path)) return 'image/svg+xml';
+  if (/\.xml$/.test(path)) return 'text/xml';
+  if (/\.js$/.test(path)) return 'text/javascript';
+  if (/\.json$/.test(path)) return 'application/json';
+  if (/\.midi?$/.test(path)) return 'audio/midi';
+  if (/\.ico$/.test(path)) return 'image/vnd.microsoft.icon';
   return 'application/octet-stream' 
 }
 
 function sendFactory(req, res) {
   const send = (code, content, mimetype = 'text/html') => {
     console.log(`[http]\t (${code}) ${req.method} ${req.url}`);
-    res.writeHead(code, { 'Content-Type': mimetype });
+    res.writeHead(code, { 'Content-Type': mimetype, 'Cache-Control': 'no-cache' });
     res.end(content);
   }
   
@@ -29,13 +51,39 @@ function sendFactory(req, res) {
   return { send, sendError };  
 }
 
-export function serve(wwwRoot = 'dist') {
-  console.log('[http]\tServer listening on http://localhost:8000/');
+/**
+ * Server-sent Events endpoint from the dev server. 
+ * Notifies the browser about file changes
+ * 
+ * @param {ServerResponse<IncomingMessage>} res 
+ * @param {EventEmitter} eventEmitter 
+ */
+function serverSentEvents(res, eventEmitter) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  eventEmitter.on('watch-event', (...payload) => {
+    res.write(`data: ${JSON.stringify(payload)}\n\n`)
+  });
+}
+export function serve(eventEmitter = null, wwwRoot = 'dist') {
+  const port = process.env.PORT || 8000;
+  console.log(`[http]\tServer listening on http://localhost:${port}/`);
   createServer((req, res) => {
+    const uri = url.parse(req.url).pathname;
     const { send, sendError } = sendFactory(req, res);
-
+    if (eventEmitter && uri === '/_dev-events') {
+      serverSentEvents(res, eventEmitter);
+      return;
+    }
+    if (uri === '/_dev-events.js') {
+      send(200, DEVSERVER_JS, 'text/javascript');
+      return;
+    }
     const dir = path.resolve(process.cwd(), wwwRoot);
-    const resourcePath = path.normalize(req.url + (req.url.endsWith('/') ? 'index.html' : ''));
+    const resourcePath = path.normalize(uri + (uri.endsWith('/') ? 'index.html' : ''));
     if (resourcePath.split('/').includes('..')) {
       sendError(404, 'Not Found');
       return;
@@ -46,7 +94,12 @@ export function serve(wwwRoot = 'dist') {
         sendError(404, 'Not Found');
         return;
       }
-      send(200, data, getMime(resourcePath));
+      const mime = getMime(resourcePath);
+      if (data && mime === 'text/html') {
+        send(200, data.toString().replace('</body>', '<script src="/_dev-events.js"></script></body>'), mime);
+        return;
+      }
+      send(200, data, mime);
     });
-  }).listen(8000);
+  }).listen(port);
 }
