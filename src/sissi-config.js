@@ -12,7 +12,7 @@ export class SissiConfig {
     input: '.',
   };
 
-  watchFileDelta = 500;
+  watchFileDelta = 1000;
   naming = defaultNaming;
 
   templateFormats = new Map();

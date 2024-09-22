@@ -16,10 +16,16 @@ export class Sissi {
   /**
    * run a build 
    */
-  async build() {
-    const files = await readdir(path.normalize(this.config.dir.input), {recursive: true});
+  async build(filter = null, eventEmitter) {
+    const files = (await readdir(path.normalize(this.config.dir.input), {recursive: true})).filter(
+      (file) => {
+        if (! filter) return true;
+        if (filter instanceof RegExp) return filter.test(file);
+      }
+    );
+    
     for (const file of files) {
-      await this.processFile(file);
+      await this.processFile(file, eventEmitter);
     }
   }
 
@@ -57,12 +63,19 @@ export class Sissi {
         if (ignores.find(d => info.dir.startsWith(path.normalize(d)))) {
           continue;
         }
-        console.log(`[${event.eventType}] ${event.filename}`);
-        if (eventEmitter) {
-          eventEmitter.emit('watch-event', event);
-        }
-        await this.processFile(event.filename);
         lastExec.set(event.filename, performance.now());
+        console.log(`[${event.eventType}] ${event.filename}`);
+        const isIgnoredFile = (info.name.startsWith('_') && info.dir.includes(path.sep + '_')); 
+        if (isIgnoredFile && info.ext === '.css') {
+          await this.build(/.css$/, eventEmitter);
+          continue;
+        }
+        if (isIgnoredFile && info.ext === '.html') {
+          await this.build(/.html$/, eventEmitter);
+          continue;
+        }
+        await this.processFile(event.filename, eventEmitter);
+        
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -70,7 +83,7 @@ export class Sissi {
     }
   }
 
-  async processFile(inputFileName) {
+  async processFile(inputFileName, eventEmitter) {
 
     const absInputFileName = path.resolve(this.config.dir.input, inputFileName);
     if (inputFileName.startsWith('_') || inputFileName.includes(path.sep + '_')) {
@@ -93,6 +106,12 @@ export class Sissi {
 
     let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
     console.log(`[write]\t${outputFileName}`);
+    if (eventEmitter) {
+      eventEmitter.emit('watch-event', {
+        eventType: 'change',
+        filename: inputFileName
+      });
+    }
     if (this.dryMode) {
       return;
     }
