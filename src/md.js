@@ -1,0 +1,41 @@
+import path from 'path';
+import { resolve } from './resolver.js';
+import { markdown } from './transforms/markdown.js';
+const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\.]+)"[\s\r\n]*\/?>/g;
+
+export default (config) => {
+  config.addTemplateFormats('md');
+
+  config.addExtension('md', {
+    outputFileExtension: 'html',
+    compile: async function (inputContent, inputPath) {
+      
+      let parsed = path.parse(inputPath);
+      if (parsed.name.startsWith('_')) {
+        // Omit files prefixed with an underscore.
+        return;
+      }
+      
+      return async () => {
+        const includes = new Map();
+        const content = markdown(inputContent);
+        const matches = content.matchAll(INCLUDE_REGEX);
+        for (const [, file] of matches) {
+          
+          const fullPath = path.join(config.dir.input, config.dir.includes, file);
+          try {
+            const content = await (config.resolve || resolve)(fullPath);
+            includes.set(file, content);
+          } catch (err) {
+            console.error('error processing file:', fullPath, err);
+            // silently fail if there is no include
+            includes.set(file, `<html-include src="${file}"/>`);
+          }
+        }   
+        return content.replace(INCLUDE_REGEX, (_, file) => {
+          return includes.get(file)
+        });
+      };
+    },
+  });
+};
