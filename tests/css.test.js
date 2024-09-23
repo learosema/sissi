@@ -1,5 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 
 import { SissiConfig } from '../src/sissi-config.js';
 import css from '../src/css.js'
@@ -18,7 +19,8 @@ describe('css plugin', () => {
   virtualFileSystem.set('A.css', '.a {color: red; }');
   virtualFileSystem.set('B.css', '.b {color: green }');
 
-  function dummyResolver(resource) {
+  function dummyResolver(...paths) {
+    const resource = path.normalize(path.join(...paths));
     const match = resource.match(/\\?\/?(\w+.css)$/);
     if (!match || !virtualFileSystem.has(match[1]) ) {
       throw new Error('Virtual File not found')

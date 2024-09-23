@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { resolve } from './resolver.js';
+import { handleTemplateFile } from './transforms/template-data.js';
 
 // TODO: add a regex for layer syntax
 const INCLUDE_REGEX = /@import [\"\']([\w:\/\\]+\.css)[\"\'];/g;
@@ -11,29 +11,15 @@ export default (config) => {
   config.addExtension('css', {
     outputFileExtension: 'css',
     compile: async function (inputContent, inputPath) {
-      
       let parsed = path.parse(inputPath);
-      if (parsed.name.startsWith('_')) {
-        // Omit files prefixed with an underscore.
-        return;
-      }
-      
-      return async () => {
+
+      return async (data) => {
         const includes = new Map();
         const matches = inputContent.matchAll(INCLUDE_REGEX);
         for (const [, file] of matches) {
-          
-          const fullPath = path.resolve(config.dir.input, parsed.dir, file);
-          try {
-            const content = await (config.resolve || resolve)(fullPath);
-            includes.set(file, content);
-          } catch (err) {
-            console.error('error processing file:', fullPath, err);
-            // silently fail if there is no include
-            includes.set(file, `@import "${file}";`);
-          }
+          const tpl = await handleTemplateFile(config, data, path.join(parsed.dir, file));
+          includes.set(file, tpl ? tpl.content : `@import url("${file}");`);
         }
-                
         return inputContent.replace(INCLUDE_REGEX, (_, file) => includes.get(file)) 
       };
     },

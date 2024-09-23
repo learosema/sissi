@@ -20,7 +20,7 @@ describe('resolve', () => {
   });
 
   it('should resolve files from the local file system', async () => {
-    const content = await resolve(path.join(config.dir.input, 'index.html'));
+    const content = await resolve(config.dir.input, 'index.html');
     assert(content.startsWith('---\n'));
   });
 
@@ -36,7 +36,7 @@ describe('resolve', () => {
       })
     });
 
-    const content = await resolve('https://unpkg.com/open-props@1.7.6/open-props.min.css');
+    const content = await resolve(config.dir.input, 'https://unpkg.com/open-props@1.7.6/open-props.min.css');
     assert.strictEqual(globalThis.fetch.mock.callCount(), 1);
     assert(content.startsWith(':where'));
 

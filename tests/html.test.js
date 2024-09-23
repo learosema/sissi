@@ -1,5 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 
 import { SissiConfig } from '../src/sissi-config.js';
 import html from '../src/html.js'
@@ -17,8 +18,14 @@ describe('html plugin', () => {
   ].join('\n'));
   virtualFileSystem.set('_includes/header.html', '<header></header>');
   virtualFileSystem.set('_includes/main.html', '<main></main>');
+  virtualFileSystem.set('_includes/nav.html', '<nav></nav>');
 
-  function dummyResolver(resource) {
+  virtualFileSystem.set('_includes/waterfall-header.html', '<header><html-include src="nav.html"></header>');
+  virtualFileSystem.set('waterfall.html', '<html><body><html-include src="waterfall-header.html"></body></html>');
+
+
+  function dummyResolver(...paths) {
+    const resource = path.normalize(path.join(...paths));
     return virtualFileSystem.get(resource);
   }
   
@@ -41,6 +48,16 @@ describe('html plugin', () => {
     ].join('\n');
 
     const transform = await config.extensions.get('html').compile(virtualFileSystem.get('index.html'), 'index.html');
+    const result = await transform();
+
+    assert.equal(result, expectedFile);
+  });
+
+  it('should handle waterfall includes nicely', async () => {
+    const expectedFile = '<html><body><header><nav></nav></header></body></html>';
+    const file = 'waterfall.html';
+
+    const transform = await config.extensions.get('html').compile(virtualFileSystem.get(file), file);
     const result = await transform();
 
     assert.equal(result, expectedFile);
