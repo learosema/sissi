@@ -21,7 +21,7 @@ describe('resolve', () => {
 
   it('should resolve files from the local file system', async () => {
     const content = await resolve(path.join(config.dir.input, 'index.html'));
-    assert(content.startsWith('<!DOCTYPE html>'));
+    assert(content.startsWith('---\n'));
   });
 
   it('should fetch stuff from the internet', async () => {
