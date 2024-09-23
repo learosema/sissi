@@ -6,8 +6,7 @@ import { SissiConfig } from './sissi-config.js';
 import { serve } from './httpd.js';
 import EventEmitter from 'node:stream';
 import { readDataDir } from './data.js';
-import { template } from './transforms/template-data.js'
-import { frontmatter } from './transforms/frontmatter.js';
+import { handleTemplateFile } from './transforms/template-data.js';
 
 export class Sissi {
   
@@ -30,9 +29,11 @@ export class Sissi {
         if (filter instanceof RegExp) return filter.test(file);
       }
     );
+    const writtenFiles = []
     for (const file of files) {
-      await this.processFile(file, eventEmitter);
+      writtenFiles.push(await this.processFile(file, eventEmitter));
     }
+    return writtenFiles.filter(Boolean);
   }
 
   /**
@@ -96,61 +97,27 @@ export class Sissi {
     if (! this.data) {
       this.data = await readDataDir(this.config);
     }
-    const absInputFileName = path.resolve(this.config.dir.input, inputFileName);
-    if (inputFileName.startsWith('_') || inputFileName.includes(path.sep + '_')) {
+    if (inputFileName.startsWith('_') || inputFileName.includes(path.sep + '_') || path.parse(inputFileName).name.startsWith('_')) {
       return;
     }
-    const stats = await stat(absInputFileName);
-    if (stats.isDirectory()) {
-      return;
+
+    const tpl = await handleTemplateFile(this.config, this.data, inputFileName);
+    if (! tpl) {
+      return null;
     }
-    let content = await readFile(absInputFileName, 'utf8');
-    const parsed = path.parse(inputFileName);
-    const extension = parsed.ext?.slice(1);
-
-    let ext = null;
-    if (this.config.extensions.has(extension)) {
-      ext = this.config.extensions.get(extension);
-      const { data: matterData, body } = frontmatter(content);
-      content = body;
-      const fileData = Object.assign({}, structuredClone(this.data), matterData);
-      const processor = await ext.compile(content, inputFileName);
-      content = template(await processor(fileData))(fileData);
-
-      if (fileData.layout) {
-        fileData.content = content;
-        const relLayoutDir = path.normalize(
-          path.join(this.config.dir.input, this.config.dir.layouts || '_layouts')
-        );
-        const absLayoutFilePath = path.resolve(relLayoutDir, fileData.layout);
-        const layoutExtKey = path.parse(absLayoutFilePath).ext?.slice(1);
-        let layoutContent = await readFile(absLayoutFilePath, 'utf8');
-        
-        const layoutExt = layoutExtKey ? this.config.extensions.get(layoutExtKey) : null;
-        if (layoutExt) {
-          const processor = await layoutExt.compile(layoutContent, inputFileName);
-          layoutContent = await processor(fileData);
-        } 
-
-        content = template(layoutContent)(fileData);
-      }
-
-
-    }
-
-    let outputFileName =this.config.naming(this.config.dir.output, inputFileName, ext?.outputFileExtension);
-    console.log(`[write]\t${outputFileName}`);
+    
+    console.log(`[write]\t${tpl.filename}`);
     if (eventEmitter) {
       eventEmitter.emit('watch-event', {
         eventType: 'change',
         filename: inputFileName
       });
     }
-    if (this.dryMode) {
-      return;
+    if (! this.dryMode) {
+      await mkdir(path.parse(tpl.filename).dir, {recursive: true});
+      await writeFile(tpl.filename, tpl.content, {});
     }
-    await mkdir(path.parse(outputFileName).dir, {recursive: true});
-    await writeFile(outputFileName, content, {});
+    return tpl.filename;
   }
 
   /**

@@ -9,7 +9,7 @@ describe('readDataDir', () => {
   
   before(() => {
     config = new SissiConfig({dir: {
-      input: 'tests/fixture',
+      input: 'tests/fixtures/data',
       data: '_data',
       output: 'dist'
     }});

@@ -1,3 +1,9 @@
+import path from 'node:path';
+
+import { frontmatter } from './frontmatter.js';
+import { resolve } from '../resolver.js';
+import { SissiConfig } from "../sissi-config.js";
+
 const TEMPLATE_REGEX = /\{\{\s*([\w\.\[\]]+)\s*\}\}/g;
 const JSON_PATH_REGEX = /^\w+((?:\.\w+)|(?:\[\d+\]))*$/
 const JSON_PATH_TOKEN = /(^\w+)|(\.\w+)|(\[\d+\])/g
@@ -40,4 +46,51 @@ export function template(str) {
       return dataPath(expr)(data)
     });
   }
+}
+
+/**
+ * Complete Template processing function
+ * @param {SissiConfig} config 
+ * @param {any} data 
+ * @param {string} inputFile 
+ * @returns {Promise<{content: Buffer|string, filename}>} the content file name and the output file name
+ */
+export async function handleTemplateFile(config, data, inputFile) {
+  const content = await (config.resolve || resolve)(config.dir.input, inputFile);
+  if (content === null) {
+    return null;
+  } 
+
+  const parsed = path.parse(inputFile);
+  const ext = parsed.ext?.slice(1);
+  if (! config.extensions.has(ext)) {
+    return {
+      content,
+      filename: config.naming(config.dir.output, inputFile)
+    };
+  }
+  
+  const plugin = config.extensions.get(ext);
+
+  const { data: matterData, body } = frontmatter(content);
+  const fileData = Object.assign({}, structuredClone(data), matterData);
+  
+  const outputFile = config.naming(config.dir.output, inputFile, plugin?.outputFileExtension);
+  Object.assign(fileData, {
+    inputFile,
+    outputFile,
+  })
+  
+  const processor = await plugin.compile(body, inputFile);
+
+  let fileContent = template(await processor(fileData))(fileData);
+
+  if (fileData.layout) {
+    const layoutFilePath = path.normalize(path.join(config.dir.layouts, fileData.layout));
+    const l = await handleTemplateFile(config, 
+      {...fileData, content: fileContent, layout: null}, layoutFilePath);
+    fileContent = l.content;
+  }
+
+  return {content: fileContent, filename: outputFile};
 }

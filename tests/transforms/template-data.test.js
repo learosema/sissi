@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { dataPath, template } from '../../src/transforms/template-data.js';
+import path from 'node:path';
+
+import { dataPath, handleTemplateFile, template } from '../../src/transforms/template-data.js';
+import { SissiConfig } from '../../src/sissi-config.js';
+import md from '../../src/md.js';
 
 const TEST_DATA = {
   'title': 'This is a title',
@@ -10,6 +14,15 @@ const TEST_DATA = {
   },
   'theMatrix': [[1,2,3],[4,5,6],[7,8,9]],
 }
+
+const TEST_MD = `---
+layout: base.html
+author: Lea Rosema
+---
+# {{ title }}
+
+An article by {{ author }}
+`
 
 const TEST_TEMPLATE = `<h1>{{ title }}</h1>
 <p>Blog article by {{ meta.authors[1] }}</p>
@@ -52,3 +65,24 @@ describe('template function', () => {
     assert.equal(template(TEST_TEMPLATE)(TEST_DATA), TEST_TEMPLATE_EXPECTED);
   });
 })
+
+describe('handleTemplateFile function', () => {
+  it('should work with the default markdown plugin', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+
+    const vFS = new Map();
+    vFS.set('index.md', TEST_MD);
+    vFS.set('_layouts/base.html', '<body>{{ content }}</body>');  
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      return vFS.get(resource);
+    }
+
+    const result = await handleTemplateFile(config, {title: 'Lea was here'}, 'index.md');
+
+    assert.equal(result.filename, 'public/index.html');
+    assert.equal(result.content, '<body><h1>Lea was here</h1>\n<p>An article by Lea Rosema</p></body>')
+  });
+});

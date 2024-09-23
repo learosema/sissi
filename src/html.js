@@ -1,6 +1,7 @@
 import path from 'path';
-import { resolve } from './resolver.js';
-const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\.]+)"[\s\r\n]*\/?>/g;
+import { handleTemplateFile } from './transforms/template-data.js';
+
+const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\-\.]+)"[\s\r\n]*\/?>/g;
 
 export default (config) => {
   config.addTemplateFormats('html');
@@ -10,29 +11,21 @@ export default (config) => {
     compile: async function (inputContent, inputPath) {
       
       let parsed = path.parse(inputPath);
-      if (parsed.name.startsWith('_')) {
-        // Omit files prefixed with an underscore.
-        return;
-      }
       
-      return async () => {
+      return async (data) => {
         const includes = new Map();
-        const matches = inputContent.matchAll(INCLUDE_REGEX);
-        for (const [, file] of matches) {
-          
-          const fullPath = path.join(config.dir.input, config.dir.includes, file);
-          try {
-            const content = await (config.resolve || resolve)(fullPath);
-            includes.set(file, content);
-          } catch (err) {
-            console.error('error processing file:', fullPath, err);
-            // silently fail if there is no include
-            includes.set(file, `<html-include src="${file}"/>`);
+        let content = inputContent, matches;
+
+        while ((matches = Array.from(content.matchAll(INCLUDE_REGEX))).length > 0) {
+          for (const [, file] of matches) {
+            const include = await handleTemplateFile(config, data, path.join(config.dir.includes, file));
+            includes.set(file, include ? include.content : `<!-- html-include src="${file}" -->`);
           }
-        }   
-        return inputContent.replace(INCLUDE_REGEX, (_, file) => {
-          return includes.get(file)
-        });
+          content = content.replace(INCLUDE_REGEX, (_, file) => {
+            return includes.get(file)
+          });
+        }
+        return content;
       };
     },
   });
