@@ -4,6 +4,9 @@
   "description": "Sissi stands for `Simple Static Site` and is a configuration-free static-site generator for a minimalistic build step.",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "node --test",
     "dev": "node ./src/cli dev",
