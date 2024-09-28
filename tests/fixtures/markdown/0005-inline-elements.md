@@ -1,3 +1,5 @@
+# Inline Elements
+
 These are some _inline elements_.
 
 There are more *inline elements*.

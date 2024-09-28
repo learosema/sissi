@@ -5,10 +5,12 @@ const MAGIC = [
   [/^### (.+)$/g, '<h3>$1</h3>'],
   [/^## (.+)$/g, '<h2>$1</h2>'],
   [/^# (.+)$/g, '<h1>$1</h1>'],
-  [/ $/g, '<br/>'],
-  [/_(.+)_/g, '<u>$1</u>'],
-  [/\*(.+)\*/g, '<em>$1</em>'],
+  [/ $/gm, '<br/>'],
+  [/__(.+)__/g, '<em>$1</em>'],
+  [/_(.+)_/g, '<em>$1</em>'],
   [/\*\*(.+)\*\*/g, '<strong>$1</strong>'],
+  [/\*(.+)\*/g, '<strong>$1</strong>'],
+  [/`(.+)`/, '<code>$1</code>'],
   [/<(https?:\/\/.+)>/g, '<a href="$1">$1</a>'],
   [
     /\!\[(.+)\]\((.+)\)/g,
@@ -83,16 +85,55 @@ function parseList(block) {
   return renderList(list);
 }
 
-export function markdown(input) {
-  return input.replace(/\r\n/g,'\n').split('\n\n')
+function codeblocks(str, snippetStore) {
+  let counter = 1;
+  return str.split(/\n```/g).map((part, idx) => {
+    if (idx % 2 === 0) {
+      return part;
+    }
+    const lf = part.indexOf('\n');
+    if (lf === -1) {
+      return part;
+    }
+    const lang = part.slice(0, lf);
+    const code = part.slice(lf + 1);
+    const key =  'MARKDOWNSNIPPET' + (counter++)
+    const l = lang ? ` class="language-${lang}"` : '';
+    snippetStore.set(key,
+      `<pre${l}><code${l}>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}\n</code></pre>`
+    );
+    
+    return `{{ ${key} }}`
+  }).join('\n').trim();
+}
+
+export function markdownEscape(str) {
+  return str.replace(/\\([a-z\/\\`\{\}])/, '$1').replace(/(.?)([<>&])(.?)/g, 
+    (_, before, char, after) => 
+      before + (/[^\s]+/.test(before) || /[^\s]+/.test(after) ? char:`&${{'<':'lt','>':'gt','&':'amp'}[char]};`) + after
+    );
+}
+
+export function markdown(input, escape = true) {
+  const vars = new Map();
+  const esc = (str) => escape?markdownEscape(str):str;
+  return esc(codeblocks(input.replace(/\r\n/g,'\n'), vars).split('\n\n')
     .map(block => inlines(block.trim()))
     .map(block => {
     if (UL_PATTERN.test(block)) {
       return parseList(block);
     }
+    if (block.startsWith('> ')) {
+      return `<blockquote>\n${block.replace(/^> /gm, '')}\n</blockquote>`
+    }
     if (/^<\w+>/.test(block)) {
       return block;
     }
+    if (/\{\{ MARKDOWNSNIPPET\d+ \}\}/.test(block)) {
+      return block;
+    }
     return `<p>${block}</p>`
-  }).join('\n').trim();
+  }).join('\n\n')).replace(/\{\{\s*(\w+)\s*\}\}/g, 
+    (outer, expr) => (vars.get(expr)) ? vars.get(expr) : outer
+  ).trim() + '\n';
 }

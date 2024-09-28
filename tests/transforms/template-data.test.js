@@ -83,6 +83,6 @@ describe('handleTemplateFile function', () => {
     const result = await handleTemplateFile(config, {title: 'Lea was here'}, 'index.md');
 
     assert.equal(result.filename, 'public/index.html');
-    assert.equal(result.content, '<body><h1>Lea was here</h1>\n<p>An article by Lea Rosema</p></body>')
+    assert.equal(result.content, '<body><h1>Lea was here</h1>\n\n<p>An article by Lea Rosema</p>\n</body>')
   });
 });
