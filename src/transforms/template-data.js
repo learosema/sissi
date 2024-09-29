@@ -4,9 +4,9 @@ import { frontmatter } from './frontmatter.js';
 import { resolve } from '../resolver.js';
 import { SissiConfig } from "../sissi-config.js";
 
-const TEMPLATE_REGEX = /\{\{\s*([\w\.\[\]]+)(?:\((.*)\))?(?:\s*\|\s(\w+)?(?:\s*\:\s*(.+))?)?\s*\}\}/g;
-const JSON_PATH_REGEX = /^\w+((?:\.\w+)|(?:\[\d+\]))*$/
-const JSON_PATH_TOKEN = /(^\w+)|(\.\w+)|(\[\d+\])/g
+const TEMPLATE_REGEX = /\{\{\s*([\w\.\[\]]+)(?:\((.*)\))?(?:\s*\|\s([a-zA-Z*]\w*)?(?:\s*\:\s*(.+))?)?\s*\}\}/g;
+const JSON_PATH_REGEX = /^[a-zA-Z_]\w*((?:\.\w+)|(?:\[\d+\]))*$/
+const JSON_PATH_TOKEN = /(^[a-zA-Z_]\w*)|(\.[a-zA-Z_]\w*)|(\[\d+\])/g
 
 /**
  * Poor girl's jsonpath
@@ -32,7 +32,12 @@ export function dataPath(path) {
     return result;
   }
 }
-
+/**
+ * 
+ * @param {string} args a string with a comma separated  
+ * @param {any} data data object that is used to fill in data-path parameters
+ * @returns 
+ */
 export function parseArguments(args, data) {
   if (!args) return [];
   return args.trim().split(/\s*,\s*/).map(arg => {
@@ -57,15 +62,16 @@ export function template(str) {
   return (data, filters) => {
     return str.replace(TEMPLATE_REGEX, (_, expr, params, filter, filterParams) => {
       let result = dataPath(expr)(data);
-      const args = parseArguments(params);
+      const args = parseArguments(params, data);
       
       if (typeof result === "function") {
         result = result(...args);
       }
+
       if (filter && filters instanceof Map &&
-          filters.has(filter) && typeof filters[filter] === 'function') {
+          filters.has(filter) && typeof filters.get(filter) === 'function') {
         const filterArgs = parseArguments(filterParams, data);
-        result = filters[filter](...filterArgs);
+        result = filters.get(filter)(result, ...filterArgs);
       }
       return result;
     });
@@ -74,6 +80,7 @@ export function template(str) {
 
 /**
  * Complete Template processing function
+ * 
  * @param {SissiConfig} config 
  * @param {any} data 
  * @param {string} inputFile 
