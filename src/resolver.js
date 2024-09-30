@@ -12,6 +12,9 @@ export async function resolve(...paths) {
     // seems to be an URL, fetch it
     const resource = last;
     const response = await fetch(resource);
+    if (response.status >= 400) {
+      throw new Error('Not Found');
+    }
     const contentType = response.headers.get('Content-Type');
     if (!contentType || !contentType.startsWith('text')) {
       return await response.buffer();

@@ -21,11 +21,7 @@ const TEST_DATA = {
   }
 }
 
-const TEST_MD = `---
-layout: base.html
-author: Lea Rosema
----
-# {{ title }}
+const TEST_MD = `# {{ title }}
 
 An article by {{ author }}
 `
@@ -112,13 +108,53 @@ describe('template function', () => {
   });
 });
 
-describe('handleTemplateFile function', () => {
+describe('handleTemplateFile function', {only: true}, () => {
+
+  const withFrontmatter = (str, data) => `---json\n${JSON.stringify(data)}\n---\n${str}`
+
+  it('should work with basic html files without specifying a layout', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+
+    const vFS = new Map();
+    vFS.set('index.html', '<h1>{{ title }}</h1>');
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      return vFS.get(resource);
+    }
+
+    const result = await handleTemplateFile(config, {title: 'Lea was here'}, 'index.html');
+
+    assert.equal(result.filename, 'public/index.html');
+    assert.equal(result.content, '<h1>Lea was here</h1>')
+  });
+
+  it('should work with basic html files with specifying a layout', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+
+    const vFS = new Map();
+    vFS.set('index.html', withFrontmatter('<h1>{{ title }}</h1>', {layout: 'base.html'}));
+    vFS.set('_layouts/base.html', '<body>{{ content }}</body>')
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      return vFS.get(resource);
+    }
+
+    const result = await handleTemplateFile(config, {title: 'Lea was here'}, 'index.html');
+
+    assert.equal(result.filename, 'public/index.html');
+    assert.equal(result.content, '<body><h1>Lea was here</h1></body>');
+  });
+
   it('should work with the default markdown plugin', async () => {
     const config = new SissiConfig();
     config.addExtension(md);
 
     const vFS = new Map();
-    vFS.set('index.md', TEST_MD);
+    vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'base.html', author: 'Lea Rosema'}));
     vFS.set('_layouts/base.html', '<body>{{ content }}</body>');  
 
     config.resolve = (...paths) => {
@@ -131,4 +167,62 @@ describe('handleTemplateFile function', () => {
     assert.equal(result.filename, 'public/index.html');
     assert.equal(result.content, '<body><h1>Lea was here</h1>\n\n<p>An article by Lea Rosema</p>\n</body>')
   });
+
+  it('should work with the default markdown plugin.', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+
+    const vFS = new Map();
+    vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'base.html', author: 'Lea Rosema'}));
+    vFS.set('_layouts/base.html', '<body>{{ content }}</body>');  
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      return vFS.get(resource);
+    }
+
+    const result = await handleTemplateFile(config, {title: 'Lea was here'}, 'index.md');
+
+    assert.equal(result.filename, 'public/index.html');
+    assert.equal(result.content, '<body><h1>Lea was here</h1>\n\n<p>An article by Lea Rosema</p>\n</body>')
+  });
+
+  it('should throw an error when a non-existant file is specified', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+
+    const vFS = new Map();
+    vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'notfound.html', author: 'Lea Rosema'}));
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      if (vFS.has(resource)) {
+        return vFS.get(resource);
+      }
+    }
+
+    assert.rejects(async () => {
+      await handleTemplateFile(config, {title: 'Lea was here'}, 'something-completely-different.md');
+    });
+  });
+
+  it('should throw an error when a non-existant file is specified as layout', {only: true}, async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+
+    const vFS = new Map();
+    vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'notfound.html', author: 'Lea Rosema'}));
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      if (vFS.has(resource)) {
+        return vFS.get(resource);
+      }
+    }
+
+    assert.rejects(async () => {
+      await handleTemplateFile(config, {title: 'Lea was here'}, 'index.md');
+    });
+  });
+
 });

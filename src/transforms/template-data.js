@@ -88,10 +88,12 @@ export function template(str) {
  */
 export async function handleTemplateFile(config, data, inputFile) {
   const content = await (config.resolve || resolve)(config.dir.input, inputFile);
+  if (typeof content === "undefined") {
+    throw new Error('Not Found');
+  }
   if (content === null) {
     return null;
-  } 
-
+  }
   const parsed = path.parse(inputFile);
   const ext = parsed.ext?.slice(1);
   if (! config.extensions.has(ext)) {
@@ -120,7 +122,11 @@ export async function handleTemplateFile(config, data, inputFile) {
     const layoutFilePath = path.normalize(path.join(config.dir.layouts, fileData.layout));
     const l = await handleTemplateFile(config, 
       {...fileData, content: fileContent, layout: null}, layoutFilePath);
-    fileContent = l.content;
+    if (l) {
+      fileContent = l.content;;
+    } else {
+      throw new Error('Layout not found:' + layoutFilePath);
+    }
   }
 
   return {content: fileContent, filename: outputFile};
