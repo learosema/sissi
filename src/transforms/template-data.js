@@ -8,6 +8,14 @@ const TEMPLATE_REGEX = /\{\{\s*([\w\.\[\]]+)(?:\((.*)\))?(?:\s*\|\s([a-zA-Z*]\w*
 const JSON_PATH_REGEX = /^[a-zA-Z_]\w*((?:\.\w+)|(?:\[\d+\]))*$/
 const JSON_PATH_TOKEN = /(^[a-zA-Z_]\w*)|(\.[a-zA-Z_]\w*)|(\[\d+\])/g
 
+function mergeMaps(map1, map2) {
+  return new Map([...map1, ...map2]);
+}
+
+function htmlEscape(input) {
+  return input?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 /**
  * Poor girl's jsonpath
  * 
@@ -59,7 +67,11 @@ export function parseArguments(args, data) {
  * @returns {(data: any, filters: Map<string, function>) => string} a function that takes a data object and returns the processed template
  */
 export function template(str) {
-  return (data, filters) => {
+  const defaultFilters = new Map();
+  let isSafe = false;
+  defaultFilters.set('safe', (input) => { isSafe = true; return input; })
+  return (data, providedFilters) => {
+    const filters = mergeMaps(defaultFilters || new Map(), providedFilters || new Map())
     return str.replace(TEMPLATE_REGEX, (_, expr, params, filter, filterParams) => {
       let result = dataPath(expr)(data);
       const args = parseArguments(params, data);
@@ -73,7 +85,7 @@ export function template(str) {
         const filterArgs = parseArguments(filterParams, data);
         result = filters.get(filter)(result, ...filterArgs);
       }
-      return result;
+      return isSafe ? result : htmlEscape(result);
     });
   }
 }
@@ -123,7 +135,7 @@ export async function handleTemplateFile(config, data, inputFile) {
     const l = await handleTemplateFile(config, 
       {...fileData, content: fileContent, layout: null}, layoutFilePath);
     if (l) {
-      fileContent = l.content;;
+      fileContent = l.content;
     } else {
       throw new Error('Layout not found:' + layoutFilePath);
     }
@@ -131,3 +143,4 @@ export async function handleTemplateFile(config, data, inputFile) {
 
   return {content: fileContent, filename: outputFile};
 }
+
