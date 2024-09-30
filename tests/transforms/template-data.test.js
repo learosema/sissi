@@ -97,6 +97,18 @@ describe('template function', () => {
     assert.equal(result, "HELLO");
   });
 
+  it('should escape angle brackets and ampersands by default', () => {
+    const result = template('{{ content }}')({content: '<h1>Hello</h1>'});
+
+    assert.equal(result, '&lt;h1&gt;Hello&lt;/h1&gt;')
+  });
+
+  it('should not escape angle brackets and ampersands when marked safe', () => {
+    const result = template('{{ content | safe }}')({content: '<h1>Hello</h1>'});
+
+    assert.equal(result, '<h1>Hello</h1>')
+  });
+
   it('should be able to apply a filter with additional parameters', () => {
     const data = { greeting: 'Hello Lea'}
     const filters = new Map();
@@ -108,7 +120,7 @@ describe('template function', () => {
   });
 });
 
-describe('handleTemplateFile function', {only: true}, () => {
+describe('handleTemplateFile function', () => {
 
   const withFrontmatter = (str, data) => `---json\n${JSON.stringify(data)}\n---\n${str}`
 
@@ -136,7 +148,7 @@ describe('handleTemplateFile function', {only: true}, () => {
 
     const vFS = new Map();
     vFS.set('index.html', withFrontmatter('<h1>{{ title }}</h1>', {layout: 'base.html'}));
-    vFS.set('_layouts/base.html', '<body>{{ content }}</body>')
+    vFS.set('_layouts/base.html', '<body>{{ content | safe }}</body>')
 
     config.resolve = (...paths) => {
       const resource = path.normalize(path.join(...paths));
@@ -155,7 +167,7 @@ describe('handleTemplateFile function', {only: true}, () => {
 
     const vFS = new Map();
     vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'base.html', author: 'Lea Rosema'}));
-    vFS.set('_layouts/base.html', '<body>{{ content }}</body>');  
+    vFS.set('_layouts/base.html', '<body>{{ content | safe }}</body>');  
 
     config.resolve = (...paths) => {
       const resource = path.normalize(path.join(...paths));
@@ -174,7 +186,7 @@ describe('handleTemplateFile function', {only: true}, () => {
 
     const vFS = new Map();
     vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'base.html', author: 'Lea Rosema'}));
-    vFS.set('_layouts/base.html', '<body>{{ content }}</body>');  
+    vFS.set('_layouts/base.html', '<body>{{ content | safe }}</body>');  
 
     config.resolve = (...paths) => {
       const resource = path.normalize(path.join(...paths));
@@ -206,7 +218,7 @@ describe('handleTemplateFile function', {only: true}, () => {
     });
   });
 
-  it('should throw an error when a non-existant file is specified as layout', {only: true}, async () => {
+  it('should throw an error when a non-existant file is specified as layout', async () => {
     const config = new SissiConfig();
     config.addExtension(md);
 
