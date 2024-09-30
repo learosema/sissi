@@ -99,7 +99,17 @@ describe('template function', () => {
     const result = template('{{greeting | shout }}')({greeting: "Hello"}, filters);
     
     assert.equal(result, "HELLO");
-  })
+  });
+
+  it('should be able to apply a filter with additional parameters', () => {
+    const data = { greeting: 'Hello Lea'}
+    const filters = new Map();
+    filters.set('piratify', (str, prefix = 'Yo-ho-ho', suffix = 'yarrr') => `${prefix}! ${str}, ${suffix}!`);
+
+    assert.equal(template('{{ greeting | piratify }}')(data, filters), 'Yo-ho-ho! Hello Lea, yarrr!');
+    assert.equal(template('{{ greeting | piratify: "AYE" }}')(data, filters), 'AYE! Hello Lea, yarrr!');
+    assert.equal(template('{{ greeting | piratify: "Ahoy", "matey" }}')(data, filters), 'Ahoy! Hello Lea, matey!');
+  });
 });
 
 describe('handleTemplateFile function', () => {
