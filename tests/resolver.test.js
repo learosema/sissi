@@ -31,6 +31,7 @@ describe('resolve', () => {
       headers.set('Content-Type', 'text/css');
       
       return ({
+        status: 200,
         headers,
         async text() {return ':where(html){}'}
       })
@@ -43,4 +44,22 @@ describe('resolve', () => {
     globalThis.fetch = originalFetch;
   });
 
+  it('should not fetch stuff from the internet when the status code is an error', () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock.fn(async () => {
+      const headers = new Map();
+      headers.set('Content-Type', 'text/html');
+      return ({
+        status: 404,
+        headers,
+        async text() {return 'Not Found'}
+      })
+    });
+
+    assert.rejects(async () => {
+      await resolve(config.dir.input, 'https://not-found.io/404.html');
+    });
+    globalThis.fetch = originalFetch;
+  });
+  
 });
