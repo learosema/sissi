@@ -6,16 +6,16 @@ import { defaultNaming, directoryNaming } from '../src/naming.js';
 
 describe('Default Naming', () => {
   it('should use append-strategy for non-html files', () => {
-    const result = defaultNaming('test', 'logo.svg');
+    const result = defaultNaming('logo.svg');
 
-    assert(result === ['test', 'logo.svg'].join(path.sep));
+    assert.equal(result, '/logo.svg');
   });
 
   it('should still use the append-strategy for html files', () => {
-    const result = defaultNaming('test', 'imprint.html');
+    const result = defaultNaming('imprint.html');
 
-    // imprint.html -> test/imprint/index.html
-    assert.equal(result, ['test', 'imprint.html'].join(path.sep));
+    // imprint.html -> /imprint.html
+    assert.equal(result, '/imprint.html');
   });
 
 });
@@ -24,22 +24,24 @@ describe('Default Naming', () => {
 
 describe('Directory Naming', () => {
   it('should use append-strategy for non-html files', () => {
-    const result = directoryNaming('test', 'logo.svg');
+    const result = directoryNaming('logo.svg');
 
-    assert.equal(result, ['test', 'logo.svg'].join(path.sep));
+    assert.equal(result, '/logo.svg');
   });
 
   it('should use the directory-strategy for html files', () => {
-    const result = directoryNaming('test', 'imprint.html');
+    const result = directoryNaming('test/imprint.html');
 
-    // imprint.html -> test/imprint/index.html
-    assert.equal(result, ['test', 'imprint', 'index.html'].join(path.sep));
+    // imprint.html -> /test/imprint/index.html
+    assert.equal(result, 
+      '/imprint/index.html'
+    );
   });
 
   it('should not use the directory-strategy html files named index.html', () => {
-    const result = directoryNaming('test', 'index.html');
+    const result = directoryNaming('/index.html');
 
-    assert.equal(result, ['test', 'index.html'].join(path.sep));
+    assert.equal(result, '/index.html');
   });
 
 });

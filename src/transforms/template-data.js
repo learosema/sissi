@@ -111,21 +111,34 @@ export async function handleTemplateFile(config, data, inputFile) {
   if (! config.extensions.has(ext)) {
     return {
       content,
-      filename: config.naming(config.dir.output, inputFile)
+      filename: path.normalize(path.join(config.dir.output, config.naming(inputFile)))
     };
   }
   
   const plugin = config.extensions.get(ext);
+  const pageUrl = config.naming(inputFile, plugin?.outputFileExtension);
+  const absOutputFile = path.join(path.normalize(config.dir.output), pageUrl);
+
+  const page = {
+    fileSlug: parsed.name,
+    filePathStem: path.join(parsed.dir, parsed.name),
+    inputPath: inputFile,
+    outputPath: absOutputFile,
+    outputFileExtension: plugin.outputFileExtension || 'html',
+    rawInput: content
+  };
+  
+  Object.defineProperty(page, 'url', {value: pageUrl, writable: false});
+  
 
   const { data: matterData, body } = frontmatter(content);
   const fileData = Object.assign({}, structuredClone(data), matterData);
-  
-  const outputFile = config.naming(config.dir.output, inputFile, plugin?.outputFileExtension);
-  Object.assign(fileData, {
-    inputFile,
-    outputFile,
-  })
-  
+  if (fileData.page && typeof fileData.page === 'object') {
+    Object.assign(fileData.page, page); 
+  } else {
+    fileData.page = page;
+  }
+
   const processor = await plugin.compile(body, inputFile);
 
   let fileContent = template(await processor(fileData))(fileData);
@@ -133,7 +146,7 @@ export async function handleTemplateFile(config, data, inputFile) {
   if (fileData.layout) {
     const layoutFilePath = path.normalize(path.join(config.dir.layouts, fileData.layout));
     const l = await handleTemplateFile(config, 
-      {...fileData, content: fileContent, layout: null}, layoutFilePath);
+      {...fileData, content: fileContent, layout: null}, layoutFilePath, true);
     if (l) {
       fileContent = l.content;
     } else {
@@ -141,6 +154,6 @@ export async function handleTemplateFile(config, data, inputFile) {
     }
   }
 
-  return {content: fileContent, filename: outputFile};
+  return {content: fileContent, filename: page.outputPath};
 }
 
