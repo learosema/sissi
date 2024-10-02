@@ -121,7 +121,7 @@ export async function handleTemplateFile(config, data, inputFile) {
 
   const page = {
     fileSlug: parsed.name,
-    filePathStem: path.join(parsed.dir, parsed.name),
+    filePathStem: path.join('/', parsed.dir, parsed.name),
     inputPath: inputFile,
     outputPath: absOutputFile,
     outputFileExtension: plugin.outputFileExtension || 'html',

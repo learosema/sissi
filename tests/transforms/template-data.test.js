@@ -237,4 +237,38 @@ describe('handleTemplateFile function', () => {
     });
   });
 
+  it('should populate data provided by sissi in the template', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+    const vFS = new Map();
+
+    const PAGE_TEST = [
+      'page.url: {{ page.url }}',
+      'page.filePathStem: {{ page.filePathStem }}',
+      'page.outputPath: {{ page.outputPath }}',
+      'page.outputFileExtension: {{ page.outputFileExtension }}',
+    ].join('\n');
+
+    const PAGE_TEST_EXPECTED = [
+      'page.url: /index.html',
+      'page.filePathStem: /index',
+      'page.outputPath: public' + path.sep + 'index.html',
+      'page.outputFileExtension: html',
+    ].join('\n');
+
+    vFS.set('index.html', PAGE_TEST);
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      if (vFS.has(resource)) {
+        return vFS.get(resource);
+      }
+    }
+
+    const result = await handleTemplateFile(config, {}, 'index.html');
+    assert.equal(result.content, PAGE_TEST_EXPECTED);
+  });
+
+
+
 });
