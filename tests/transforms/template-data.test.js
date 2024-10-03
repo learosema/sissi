@@ -270,6 +270,7 @@ describe('handleTemplateFile function', () => {
     const PAGE_TEST = [
       'page.url: {{ page.url }}',
       'page.filePathStem: {{ page.filePathStem }}',
+      'page.inputPath: {{ page.inputPath }}',
       'page.outputPath: {{ page.outputPath }}',
       'page.outputFileExtension: {{ page.outputFileExtension }}',
     ].join('\n');
@@ -277,6 +278,7 @@ describe('handleTemplateFile function', () => {
     const PAGE_TEST_EXPECTED = [
       'page.url: /index.html',
       'page.filePathStem: /index',
+      'page.inputPath: index.html',
       'page.outputPath: public' + path.sep + 'index.html',
       'page.outputFileExtension: html',
     ].join('\n');
