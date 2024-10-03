@@ -180,25 +180,6 @@ describe('handleTemplateFile function', () => {
     assert.equal(result.content, '<body><h1>Lea was here</h1>\n\n<p>An article by Lea Rosema</p>\n</body>')
   });
 
-  it('should work with the default markdown plugin.', async () => {
-    const config = new SissiConfig();
-    config.addExtension(md);
-
-    const vFS = new Map();
-    vFS.set('index.md', withFrontmatter(TEST_MD, {'layout': 'base.html', author: 'Lea Rosema'}));
-    vFS.set('_layouts/base.html', '<body>{{ content | safe }}</body>');  
-
-    config.resolve = (...paths) => {
-      const resource = path.normalize(path.join(...paths));
-      return vFS.get(resource);
-    }
-
-    const result = await handleTemplateFile(config, {title: 'Lea was here'}, 'index.md');
-
-    assert.equal(result.filename, 'public/index.html');
-    assert.equal(result.content, '<body><h1>Lea was here</h1>\n\n<p>An article by Lea Rosema</p>\n</body>')
-  });
-
   it('should throw an error when a non-existant file is specified', async () => {
     const config = new SissiConfig();
     config.addExtension(md);
