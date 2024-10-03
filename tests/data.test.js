@@ -35,5 +35,4 @@ describe('readDataDir', () => {
     
     assert.deepEqual(actual.yamldata, expectedData);
   });
-
 });

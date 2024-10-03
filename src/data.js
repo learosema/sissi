@@ -10,10 +10,7 @@ import { smolYAML } from './transforms/smolyaml.js';
  * @param {SissiConfig} config 
  */
 export async function readDataDir(config) {
-  const relativeDataDir = path.normalize(path.join(config.dir.input, config.dir.data || '_data'));
-  if (relativeDataDir.startsWith('..')) {
-    throw new Error('the data dir should not be above the input dir')
-  }
+  const relativeDataDir = path.normalize(path.join(config.dir.input || '.', config.dir.data || '_data'));
   const dataDir = path.resolve(relativeDataDir);
   const files = await readdir(path.normalize(dataDir), {recursive: true});
   const result = {}
