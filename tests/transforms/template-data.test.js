@@ -237,6 +237,50 @@ describe('handleTemplateFile function', () => {
     });
   });
 
+  it('should use provided data in the template', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+    const vFS = new Map();
+
+    const TEST = 'author: {{ author }}';
+
+    const TEST_EXPECTED = 'author: Lea Rosema'
+
+    vFS.set('index.html', TEST);
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      if (vFS.has(resource)) {
+        return vFS.get(resource);
+      }
+    }
+
+    const result = await handleTemplateFile(config, {author: 'Lea Rosema'}, 'index.html');
+    assert.equal(result.content, TEST_EXPECTED);
+  });
+
+  it('should override provided data with frontmatter data in the template', async () => {
+    const config = new SissiConfig();
+    config.addExtension(md);
+    const vFS = new Map();
+
+    const TEST = 'author: {{ author }}';
+
+    const TEST_EXPECTED = 'author: John Doe'
+
+    vFS.set('index.html', withFrontmatter(TEST, {author: 'John Doe'}));
+
+    config.resolve = (...paths) => {
+      const resource = path.normalize(path.join(...paths));
+      if (vFS.has(resource)) {
+        return vFS.get(resource);
+      }
+    }
+
+    const result = await handleTemplateFile(config, {author: 'Lea Rosema'}, 'index.html');
+    assert.equal(result.content, TEST_EXPECTED);
+  });
+
   it('should populate data provided by sissi in the template', async () => {
     const config = new SissiConfig();
     config.addExtension(md);
@@ -268,7 +312,4 @@ describe('handleTemplateFile function', () => {
     const result = await handleTemplateFile(config, {}, 'index.html');
     assert.equal(result.content, PAGE_TEST_EXPECTED);
   });
-
-
-
 });
