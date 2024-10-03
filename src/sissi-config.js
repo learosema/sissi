@@ -2,6 +2,7 @@ import css from "./css.js";
 import html from "./html.js";
 import md from "./md.js";
 import { defaultNaming } from "./naming.js";
+import * as builtinFilters from './builtin-filters.js';
 
 export class SissiConfig {
   
@@ -18,7 +19,7 @@ export class SissiConfig {
 
   templateFormats = new Map();
   extensions = new Map();
-  filters = new Map();
+  filters = new Map(Object.entries(builtinFilters));
 
   constructor(options = null) {
     this.addPlugin(html);

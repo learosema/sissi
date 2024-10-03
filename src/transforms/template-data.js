@@ -13,7 +13,7 @@ function mergeMaps(map1, map2) {
 }
 
 function htmlEscape(input) {
-  return input?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return input?.toString().replace(/\&/g, '&amp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
 }
 
 /**
@@ -54,8 +54,9 @@ export function parseArguments(args, data) {
     }
     try {
       return JSON.parse(arg)
-    } catch (_err) {
-      return null;
+    } catch (err) {
+      console.error('error parsing JSON:', err.message);
+      return [];
     }
   });
 }
@@ -83,7 +84,7 @@ export function template(str) {
       if (filter && filters instanceof Map &&
           filters.has(filter) && typeof filters.get(filter) === 'function') {
         const filterArgs = parseArguments(filterParams, data);
-        result = filters.get(filter)(result, ...filterArgs);
+        result = filters.get(filter)(result, ...(filterArgs||[]));
       }
       return isSafe ? result : htmlEscape(result);
     });
@@ -141,7 +142,7 @@ export async function handleTemplateFile(config, data, inputFile) {
 
   const processor = await plugin.compile(body, inputFile);
 
-  let fileContent = template(await processor(fileData))(fileData);
+  let fileContent = template(await processor(fileData))(fileData, config.filters);
 
   if (fileData.layout) {
     const layoutFilePath = path.normalize(path.join(config.dir.layouts, fileData.layout));
