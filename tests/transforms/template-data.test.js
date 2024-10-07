@@ -1,8 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import nonStrictAssert from 'node:assert';
 import path from 'node:path';
+import { createContext } from 'node:vm';
 
-import { dataPath, handleTemplateFile, parseArguments, template } from '../../src/transforms/template-data.js';
+import { handleTemplateFile, parseFilterExpression, template } from '../../src/transforms/template-data.js';
 import { SissiConfig } from '../../src/sissi-config.js';
 import md from '../../src/md.js';
 
@@ -40,43 +42,32 @@ const TEST_TEMPLATE_EXPECTED_2 = '12.03.2024';
 const TEST_TEMPLATE_3 = `{{ greet(meta.authors[1]) }}`
 const TEST_TEMPLATE_EXPECTED_3 = 'Hello Lea';
 
-describe('dataPath tests', () => {
+describe('parseFilterExpression function', () => {
+  const scope = { meta: { authors: ['Joe', 'Lea'] }, foo: 'bar' };
+  const context = createContext(scope);
 
-  it('creates a function to get data properties', () => {
-    assert.equal(dataPath('title')(TEST_DATA), TEST_DATA.title);
+  it('should parse a parameterless filter', () => {
+    const [filter, args] = parseFilterExpression('uppercase', context);
+
+    assert.equal(filter, 'uppercase');
+    assert.equal(args, null);
   });
 
-  it('creates a function to get an element from an array', () => {
-    assert.equal(dataPath('tags[2]')(TEST_DATA), TEST_DATA.tags[2]);
+  it('should parse the filter and a list of constant arguments from an expression', () => {
+    const [filter, args] = parseFilterExpression('language: "de"', context);
+
+    assert.equal(filter, 'language');
+    nonStrictAssert.deepEqual(args, ["de"]);
   });
 
-  it('creates a function to get an element from an array inside an object', () => {
-    assert.equal(dataPath('meta.authors[1]')(TEST_DATA), TEST_DATA.meta.authors[1]);
+  it('should addionally resolve any variable used', () => {
+    const [filter, args] = parseFilterExpression('author: meta.authors[1]', context);
+
+    assert.equal(filter, 'author');
+    nonStrictAssert.deepEqual(args, ['Lea']);
   });
 
-  it('creates a function to get an element from a nested array', () => {
-    assert.equal(dataPath('theMatrix[1][2]')(TEST_DATA), TEST_DATA.theMatrix[1][2]);
-  });
-
-  it('should fail when using an invalid syntax', () => {
-    assert.throws(() => dataPath(''));
-    assert.throws(() => dataPath('.object[1]'));
-    assert.throws(() => dataPath('object[1].'));
-    assert.throws(() => dataPath('object.[1]'));
-    assert.throws(() => dataPath('object..[1]'));
-  });
-});
-
-describe('parseArguments function', () => {
-  it('should parse argument lists', () => {
-    assert.deepEqual(parseArguments('"DE"', {}), ["DE"]);
-    assert.deepEqual(parseArguments('12.3, "DE"', {}), [12.3, "DE"]);
-  });
-
-  it('should support data path arguments', () => {
-    assert.deepEqual(parseArguments('meta.author, 12', {meta:{author:'Lea'}}), ['Lea', 12]);
-  });
-
+  
 });
 
 describe('template function', () => {
@@ -110,13 +101,25 @@ describe('template function', () => {
   });
 
   it('should be able to apply a filter with additional parameters', () => {
-    const data = { greeting: 'Hello Lea'}
+    const data = { greeting: 'Hello Lea' }
     const filters = new Map();
     filters.set('piratify', (str, prefix = 'Yo-ho-ho', suffix = 'yarrr') => `${prefix}! ${str}, ${suffix}!`);
 
     assert.equal(template('{{ greeting | piratify }}')(data, filters), 'Yo-ho-ho! Hello Lea, yarrr!');
     assert.equal(template('{{ greeting | piratify: "AYE" }}')(data, filters), 'AYE! Hello Lea, yarrr!');
     assert.equal(template('{{ greeting | piratify: "Ahoy", "matey" }}')(data, filters), 'Ahoy! Hello Lea, matey!');
+  });
+
+  it('should be able to chain filters', () => {
+    const filters = new Map();
+    filters.set('shout', (str) => (str||'').toUpperCase());
+    filters.set('piratify', (str, prefix = 'Yo-ho-ho', suffix = 'yarrr') => `${prefix}! ${str}, ${suffix}!`);
+
+    const data = { greeting: 'Hello Lea' };
+    assert.equal(template('{{ greeting | piratify | shout }}')(data, filters), 'YO-HO-HO! HELLO LEA, YARRR!');
+
+    // order matters
+    assert.equal(template('{{ greeting | shout | piratify }}')(data, filters), 'Yo-ho-ho! HELLO LEA, yarrr!');
   });
 });
 
