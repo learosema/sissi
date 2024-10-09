@@ -100,3 +100,8 @@ export function htmlentities(str) {
 export function urlencode(str) {
   return encodeURIComponent(str);
 }
+
+export async function async(asyncInput) {
+  const result = await asyncInput;
+  return (typeof result === 'function') ? result() : result;
+}
