@@ -3,6 +3,7 @@ import vm from 'node:vm';
 import { frontmatter } from './frontmatter.js';
 import { resolve } from '../resolver.js';
 import { SissiConfig } from "../sissi-config.js";
+import { replaceAsync } from '../utils/replace-async.js';
 
 const TEMPLATE_REGEX = /\{\{\s*(.+?)\s*\}\}/g;
 
@@ -47,16 +48,16 @@ export function parseFilterExpression(expr, ctx) {
  * Poor girl's handlebars
  * 
  * @param {string} str the template content
- * @returns {(data: any, filters: Map<string, function>) => string} a function that takes a data object and returns the processed template
+ * @returns {Promise<(data: any, filters: Map<string, function>) => string>} a function that takes a data object and returns the processed template
  */
 export function template(str) {
   const defaultFilters = new Map();
   let isSafe = false;
   defaultFilters.set('safe', (input) => { isSafe = true; return input; })
-  return (data, providedFilters) => {
+  return async (data, providedFilters) => {
     const context = vm.createContext({...data});
     const filters = mergeMaps(defaultFilters || new Map(), providedFilters || new Map())
-    return str.replace(TEMPLATE_REGEX, (_, templateString) => {
+    return replaceAsync(str, TEMPLATE_REGEX, async (_, templateString) => {
       const expressions = templateString.split('|').map(e => e.trim());
       const mainExpression = expressions[0];
       const filterExpressions = expressions.slice(1);
@@ -76,8 +77,14 @@ export function template(str) {
         }
         
         result = args ? filters.get(filter)(result, ...args) : filters.get(filter)(result);
+        if (result instanceof Promise) {
+          result = await result;
+        }
       }
       
+      if (result instanceof Promise) {
+        result = await result;
+      }
       return isSafe ? result : htmlEscape(result);
     });
   }
@@ -125,16 +132,15 @@ export async function handleTemplateFile(config, data, inputFile) {
   
 
   const { data: matterData, body } = frontmatter(content);
-  const fileData = Object.assign({}, structuredClone(data), matterData);
-  if (fileData.page && typeof fileData.page === 'object') {
-    Object.assign(fileData.page, page); 
-  } else {
+  const fileData = Object.assign({}, data, matterData);
+
+  if (! fileData.page) {
     fileData.page = page;
   }
 
   const processor = await plugin.compile(body, inputFile);
 
-  let fileContent = template(await processor(fileData))(fileData, config.filters);
+  let fileContent = await (template(await processor(fileData))(fileData, config.filters));
 
   if (fileData.layout) {
     const layoutFilePath = path.normalize(path.join(config.dir.layouts, fileData.layout));
