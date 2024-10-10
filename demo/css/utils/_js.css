@@ -1,0 +1,7 @@
+body:not(.js-enabled) .js {
+  display: none;
+}
+
+body.js-enabled .no-js {
+  display: none;
+}

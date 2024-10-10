@@ -8,9 +8,14 @@
 </head>
 <body>
   <html-include src="header.html"/>
-  <main>
-    {{ content | safe }}
-  </main>
+  <div class="layout">
+    <html-include src="nav.html"/>
+    <main>
+      <article class="wrapper flow">
+        {{ content | safe }}
+      </article>
+    </main>  
+  </div>
   <html-include src="footer.html"/>  
 </body>
 </html>

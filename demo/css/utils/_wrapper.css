@@ -1,0 +1,6 @@
+/* kudos: smolcss.dev intrinsic container */
+
+.wrapper {
+  width: min(100% - 3rem, var(--container-max, 862px));
+  margin-inline: auto;
+}

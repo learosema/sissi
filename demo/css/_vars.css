@@ -2,6 +2,8 @@
   --bg: #222;
   --fg: white;
   --anchor: #7df;
+  --header-bg: #323c39;
+
 }
 
 @media screen and (prefers-color-scheme: light) {
