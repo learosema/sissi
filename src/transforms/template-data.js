@@ -57,7 +57,7 @@ export function template(str) {
   return async (data, providedFilters) => {
     const context = vm.createContext({...data});
     const filters = mergeMaps(defaultFilters || new Map(), providedFilters || new Map())
-    return replaceAsync(str, TEMPLATE_REGEX, async (_, templateString) => {
+    return (await replaceAsync(str, TEMPLATE_REGEX, async (_, templateString) => {
       const expressions = templateString.split('|').map(e => e.trim());
       const mainExpression = expressions[0];
       const filterExpressions = expressions.slice(1);
@@ -86,7 +86,7 @@ export function template(str) {
         result = await result;
       }
       return isSafe ? result : htmlEscape(result);
-    });
+    })).replace(/\\([\{\}])/gm, '$1');
   }
 }
 
