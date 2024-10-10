@@ -1,12 +1,11 @@
 .nav {
   display: flex;
-  background: var(--nav-bg, #000);
   gap: 1rem;
   padding-block: 2rem;
   padding-inline: 1rem;
   a {
     font-size: 1.2em;
     font-weight: bold;
-    color: var(--nav-fg, #fff);
+    color: var(--fg);
   }
 }

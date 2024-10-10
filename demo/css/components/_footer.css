@@ -1,5 +1,15 @@
-footer {
-  padding: 2rem;
-  
-  background: #000;
+.footer {
+  padding: 2rem 1rem;
+  color: var(--footer-fg);
+  background: var(--footer-bg);
+}
+
+.footer a {
+  color: var(--footer-anchor-fg);
+}
+
+@media screen and (min-width: 768px) {
+  .footer {
+    padding-inline-start: calc(1.5rem + 20ch);
+  }
 }

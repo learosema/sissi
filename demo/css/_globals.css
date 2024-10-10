@@ -22,9 +22,8 @@ body {
 }
 
 a {
-  color: var(--anchor, #f0f);
+  color: var(--anchor);
 }
-
 
 main {
   flex: 1 auto;
@@ -32,6 +31,3 @@ main {
   margin-inline-end: auto;
   padding-block: 2rem;
 }
-
-
-
