@@ -29,7 +29,7 @@ a {
 main {
   flex: 1 auto;
   width: min(100% - 3rem, var(--container-max, 60ch));
-  margin-inline: auto;
+  margin-inline-end: auto;
   padding-block: 2rem;
 }
 
