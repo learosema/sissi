@@ -20,7 +20,7 @@ describe('resolve', () => {
   });
 
   it('should resolve files from the local file system', async () => {
-    const content = await resolve(config.dir.input, 'index.html');
+    const content = await resolve(config.dir.input, 'index.md');
     assert(content.startsWith('---\n'));
   });
 
