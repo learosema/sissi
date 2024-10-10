@@ -11,7 +11,7 @@ const eventSource = new EventSource('/_dev-events');
 eventSource.addEventListener('message', (e) => {
   const events = JSON.parse(e.data);
   for (const event of events) {
-    if (event.filename.endsWith('.html')) {
+    if (event.filename.endsWith('.html') || document.location.href === event.page.url) {
       document.location.reload();
     }
     if (event.filename.endsWith('.css')) {
