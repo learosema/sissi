@@ -1,4 +1,11 @@
 .layout {
-  display: grid;
-  grid-template-columns: 30ch 1fr;
+  flex: 1 auto;
+}
+
+
+@media screen and (min-width: 768px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 20ch 1fr;
+  }    
 }
