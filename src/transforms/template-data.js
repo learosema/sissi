@@ -120,6 +120,7 @@ export async function handleTemplateFile(config, data, inputFile) {
   const absOutputFile = path.join(path.normalize(config.dir.output), pageUrl);
 
   const page = {
+    url: pageUrl,
     fileSlug: parsed.name,
     filePathStem: path.join('/', parsed.dir, parsed.name),
     inputPath: inputFile,
@@ -128,9 +129,6 @@ export async function handleTemplateFile(config, data, inputFile) {
     rawInput: content
   };
   
-  Object.defineProperty(page, 'url', {value: pageUrl, writable: false});
-  
-
   const { data: matterData, body } = frontmatter(content);
   const fileData = Object.assign({}, data, matterData);
 
@@ -153,6 +151,6 @@ export async function handleTemplateFile(config, data, inputFile) {
     }
   }
 
-  return {content: fileContent, filename: page.outputPath};
+  return {content: fileContent, filename: page.outputPath, page};
 }
 

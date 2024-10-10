@@ -110,7 +110,8 @@ export class Sissi {
     if (eventEmitter) {
       eventEmitter.emit('watch-event', {
         eventType: 'change',
-        filename: inputFileName
+        filename: tpl.filename,
+        page: tpl.page
       });
     }
     if (! this.dryMode) {
