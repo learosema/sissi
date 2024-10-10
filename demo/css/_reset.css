@@ -33,7 +33,7 @@
 
 
 :where(ul:not([class]) li) {
-  margin-inline-start: 2rem;
+  margin-inline-start: 1rem;
 }
 
 html {

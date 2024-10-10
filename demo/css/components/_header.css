@@ -1,8 +1,23 @@
 .header {
   padding: 2rem;
   background: var(--header-bg);
-  color: #fff;
+  color: var(--header-fg);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 3rem;
+
+  & img {
+    width: 8rem;
+    height: 8rem;
+    image-rendering: pixelated;
+    box-sizing: content-box;
+    border: 0.5rem solid #fff;
+    border-bottom-width: 2rem;
+    transform: rotate(-5deg);
+    box-shadow: 0.25rem 0.25rem 1rem 0 #000;
+  }
+
+  & a {
+    color: var(--header-anchor-fg);
+  }
 }

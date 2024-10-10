@@ -19,10 +19,14 @@ This must be how [Zach](https://zachleat.com/@zachleat) started Eleventy ☺️�
 - a basic templating engine with Markdown and HTML
 - a Development server with watch mode
 
-## Is it here to compete with Eleventy?
+## Why? Is it here to compete with Eleventy?
 
-Nope. Eleventy is awesome and I am a proud [supporter](https://opencollective.com/lea-rosema) of it (I'm pretty broke though so it's only a small amount I'm contributing).
+Nope. Eleventy is awesome and I am a proud [supporter](https://opencollective.com/lea-rosema).
 
-I want to get a basic understanding about static site generators and want to evaluate if the complexity could be reduced further. That may come with the cost of flexibility and cut-down of features.
+I want to get a basic understanding about static site generators and want to evaluate if the complexity could be reduced further. That does come with the cost of flexibility and cut of features.
 
 Also, I suffer from npm fatigue, so I want that node_modules folder to shrink.
+
+But there's one important thing to keep in mind: Right now, the smaller size doesn't necessarily mean it will always run faster compared to Eleventy (it depends!).
+
+Some portions, especially the template expression evaluation can be optimized, eg. by adding a caching mechanism.
