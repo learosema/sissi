@@ -1,0 +1,21 @@
+/**
+ * Breakpoints, I only use them inside SVG =)
+ */
+
+svg .md {
+  visibility: hidden;
+}
+
+svg .s {
+  visibility: visible;
+}
+
+@media (min-width: 768px) {
+  svg .s {
+    visibility: hidden;
+  }
+
+  svg .md {
+    visibility: visible;
+  }
+}

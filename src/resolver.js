@@ -1,5 +1,6 @@
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path';
+import { getMime } from './mimes.js';
 
 /**
  * Read a file from the input dir or from the internet.
@@ -28,5 +29,7 @@ export async function resolve(...paths) {
   if ((await stat(absResource)).isDirectory()) {
     return null;
   }
-  return await readFile(absResource, 'utf8');
+  const contentType = getMime(resource);
+  const isText = contentType.startsWith('text/') || contentType.endsWith('+xml');
+  return await readFile(absResource, isText ? 'utf8' : null);
 }

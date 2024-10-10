@@ -1,6 +1,5 @@
 ---
 layout: base.html
+title: Test page
 ---
-# Muh
-
 Lorem ipsum dolor sit amet.

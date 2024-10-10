@@ -6,6 +6,11 @@
   outline: 2px solid #fff;
 }
 
+html {
+  font-size: 110%;
+  line-height: 1.4;
+}
+
 body {
   font-family: system-ui, sans-serif;
   background: var(--bg);
@@ -20,24 +25,13 @@ a {
   color: var(--anchor, #f0f);
 }
 
-header {
-  padding: 2rem;
-  background: #163;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
 
 main {
   flex: 1 auto;
   width: min(100% - 3rem, var(--container-max, 60ch));
   margin-inline: auto;
+  padding-block: 2rem;
 }
 
-footer {
-  padding: 2rem;
-  
-  background: #000;
-}
+
 
