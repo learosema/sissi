@@ -2,7 +2,7 @@ import path from 'path';
 
 import { handleTemplateFile } from './transforms/template-data.js';
 
-const INCLUDE_REGEX = /@import [\"\']([\w:\/\\\.\-]+?\.css)[\"\'](?:\s*layer\s*\((\w+)\));/g;
+const INCLUDE_REGEX = /@import [\"\']([\w:\/\\\.\-]+?\.css)[\"\'](?:\s*layer\s*\((\w+)\))?;/g;
 
 export default (config) => {
   config.addTemplateFormats('css');
