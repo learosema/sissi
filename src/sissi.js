@@ -7,6 +7,8 @@ import { serve } from './httpd.js';
 import EventEmitter from 'node:stream';
 import { readDataDir } from './data.js';
 import { handleTemplateFile } from './transforms/template-data.js';
+import { getDependencyGraph } from './dependency-graph.js';
+import { resolve } from './resolver.js';
 
 export class Sissi {
   
@@ -23,13 +25,14 @@ export class Sissi {
     if (! this.data) {
       this.data = await readDataDir(this.config);
     }
-    const files = (await readdir(path.normalize(this.config.dir.input), {recursive: true})).filter(
+    const files = (filter instanceof Array) ? filter : 
+      (await readdir(path.normalize(this.config.dir.input), {recursive: true})).filter(
       (file) => {
         if (! filter) return true;
         if (filter instanceof RegExp) return filter.test(file);
       }
     );
-    const writtenFiles = []
+    const writtenFiles = [];
     for (const file of files) {
       writtenFiles.push(await this.processFile(file, eventEmitter));
     }
@@ -75,17 +78,9 @@ export class Sissi {
         }
         lastExec.set(event.filename, performance.now());
         console.log(`[${event.eventType}] ${event.filename}`);
-        const isIgnoredFile = (info.name.startsWith('_') && info.dir.includes(path.sep + '_')); 
-        if (isIgnoredFile && info.ext === '.css') {
-          await this.build(/.css$/, eventEmitter);
-          continue;
-        }
-        if (isIgnoredFile && info.ext === '.html') {
-          await this.build(/.html$/, eventEmitter);
-          continue;
-        }
-        await this.processFile(event.filename, eventEmitter);
-        
+        const deps = await getDependencyGraph(this.config.dir.input, await readdir(path.normalize(this.config.dir.input), {recursive: true}),
+          this.config.resolve || resolve);
+        await this.build([event.filename, ...(deps[event.filename]??[])], eventEmitter);
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
