@@ -1,7 +1,7 @@
 import path from 'path';
 import { handleTemplateFile } from './transforms/template-data.js';
 
-const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\-\.]+)"[\s\r\n]*\/?>/g;
+const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\-\.]+?)"[\s\r\n]*\/?>/g;
 
 export default (config) => {
   config.addTemplateFormats('html');
