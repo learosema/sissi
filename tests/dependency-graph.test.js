@@ -49,5 +49,50 @@ describe('Dependency Graph', () => {
     });
   });
 
+  it('should handle css dependencies correctly', async () => {
+    const files = {
+      'styles.css': 'import "./_reset.css";',
+      '_reset.css': '*{box-sizing:border-box;margin:0}\n'
+    };
+
+    const resolve = setupVFS(files);
+    
+    const dependencies = await getDependencyGraph('', Object.keys(files), resolve);
+
+    assert.deepEqual(dependencies, {
+      '_reset.css': ['styles.css'],
+    });
+  });
+
+  it('should handle html dependencies correctly', async () => {
+    const files = {
+      'index.html': '<html-include src="top.html">',
+      '_includes/top.html': '<header>header</header>\n'
+    };
+
+    const resolve = setupVFS(files);
+    
+    const dependencies = await getDependencyGraph('', Object.keys(files), resolve);
+
+    assert.deepEqual(dependencies, {
+      '_includes/top.html': ['index.html'],
+    });
+  });
+
+  it('should handle html includes in markdown correctly', async () => {
+    const files = {
+      'index.md': '<html-include src="top.html">',
+      '_includes/top.html': '<header>header</header>\n'
+    };
+
+    const resolve = setupVFS(files);
+    
+    const dependencies = await getDependencyGraph('', Object.keys(files), resolve);
+
+    assert.deepEqual(dependencies, {
+      '_includes/top.html': ['index.md'],
+    });
+  });
+
 
 });
