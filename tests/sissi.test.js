@@ -10,7 +10,6 @@ describe('sissi', () => {
 
   it('should successfully build a smallsite', async () => {
 
-
     const config = new SissiConfig({
       dir: {
         input: 'tests/fixtures/smallsite',
