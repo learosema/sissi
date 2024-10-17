@@ -7,7 +7,7 @@ import { serve } from './httpd.js';
 import EventEmitter from 'node:stream';
 import { readDataDir } from './data.js';
 import { handleTemplateFile } from './transforms/template-data.js';
-import { getDependencyGraph } from './dependency-graph.js';
+import { getDependencyMap, walkDependencyMap } from './dependency-graph.js';
 import { resolve } from './resolver.js';
 
 export class Sissi {
@@ -78,9 +78,13 @@ export class Sissi {
         }
         lastExec.set(event.filename, performance.now());
         console.log(`[${event.eventType}] ${event.filename}`);
-        const deps = await getDependencyGraph(this.config.dir.input, await readdir(path.normalize(this.config.dir.input), {recursive: true}),
-          this.config.resolve || resolve);
-        await this.build([event.filename, ...(deps[event.filename]??[])], eventEmitter);
+        const deps = await getDependencyMap(
+          this.config.dir.input,
+          await readdir(path.normalize(this.config.dir.input), {recursive: true}),
+          this.config.resolve || resolve
+        );
+        const allDependants = walkDependencyMap(deps, event.filename);
+        await this.build([event.filename, ...allDependants], eventEmitter);
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
