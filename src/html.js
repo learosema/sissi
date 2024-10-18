@@ -14,9 +14,9 @@ export default (config) => {
       
       return async (data) => {
         const includes = new Map();
-        let content = inputContent, matches;
-
-        while ((matches = Array.from(content.matchAll(INCLUDE_REGEX))).length > 0) {
+        let content = inputContent;
+        const matches = Array.from(content.matchAll(INCLUDE_REGEX));
+        if (matches.length > 0) {
           for (const [, file] of matches) {
             const include = await handleTemplateFile(config, data, path.join(config.dir.includes, file));
             includes.set(file, include ? include.content : `<!-- html-include src="${file}" -->`);
