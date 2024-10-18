@@ -16,8 +16,10 @@ describe('css plugin', () => {
     `@import "A.css";`,
     `@import "B.css";`,
   ].join('\n'));
-  virtualFileSystem.set('A.css', '.a {color: red; }');
-  virtualFileSystem.set('B.css', '.b {color: green }');
+  virtualFileSystem.set('A.css', '.a { color: red; }');
+  virtualFileSystem.set('B.css', '.b { color: green; }');
+  virtualFileSystem.set('C.css', '@import "styles.css";\n.c { color: blue; }\n');
+  virtualFileSystem.set('layer.css', '@import "A.css" layer (reset);\n');
 
   function dummyResolver(...paths) {
     const resource = path.normalize(path.join(...paths));
@@ -50,7 +52,29 @@ describe('css plugin', () => {
     const transform = await config.extensions.get('css').compile(virtualFileSystem.get('styles.css'), 'styles.css');
     const result = await transform();
 
-    assert(result === expectedFile);
+    assert.equal(result, expectedFile);
+  });
+
+  it('should handle waterfall includes', async () => {
+    const expectedFile = [
+      '.a { color: red; }',
+      '.b { color: green; }',
+      '.c { color: blue; }\n'
+    ].join('\n');
+
+    const transform = await config.extensions.get('css').compile(virtualFileSystem.get('C.css'), 'C.css');
+    const result = await transform();
+
+    assert.equal(result, expectedFile);
+  });
+
+  it('should handle css layers', async () => {
+    const expectedFile = `@layer reset {\n${virtualFileSystem.get('A.css')}\n}\n`
+
+    const transform = await config.extensions.get('css').compile(virtualFileSystem.get('layer.css'), 'layer.css');
+    const result = await transform();
+
+    assert.equal(result, expectedFile);
   });
 
 });
