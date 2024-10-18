@@ -14,6 +14,9 @@ import { handleTemplateFile } from './transforms/template-data.js';
  */
 export async function handleIncludes(
   content, inputPath, config, data, includePath, regex, replaceFunction) {
+  if (!content) {
+    return null;
+  }
   const includes = new Map();
   let parsed = path.parse(inputPath);
   const matches = Array.from(content.matchAll(regex));
