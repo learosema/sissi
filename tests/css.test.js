@@ -19,6 +19,7 @@ describe('css plugin', () => {
   virtualFileSystem.set('A.css', '.a { color: red; }');
   virtualFileSystem.set('B.css', '.b { color: green; }');
   virtualFileSystem.set('C.css', '@import "styles.css";\n.c { color: blue; }\n');
+  virtualFileSystem.set('layer.css', '@import "A.css" layer (reset);\n');
 
   function dummyResolver(...paths) {
     const resource = path.normalize(path.join(...paths));
@@ -67,5 +68,13 @@ describe('css plugin', () => {
     assert.equal(result, expectedFile);
   });
 
+  it('should handle css layers', async () => {
+    const expectedFile = `@layer reset {\n${virtualFileSystem.get('A.css')}\n}\n`
+
+    const transform = await config.extensions.get('css').compile(virtualFileSystem.get('layer.css'), 'layer.css');
+    const result = await transform();
+
+    assert.equal(result, expectedFile);
+  });
 
 });

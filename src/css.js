@@ -20,7 +20,7 @@ export default (config) => {
             if (! layer) {
               return include.content;
             }
-            return `@layer ${layer} {\n${tpl.content}\n}`;
+            return `@layer ${layer} {\n${include.content}\n}`;
           }
         );
       }
