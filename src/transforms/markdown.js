@@ -115,6 +115,9 @@ export function markdownEscape(str) {
 }
 
 export function markdown(input, escape = true) {
+  if (! input) {
+    return undefined;
+  }
   const vars = new Map();
   const esc = (str) => escape?markdownEscape(str):str;
   return esc(codeblocks(input.replace(/\r\n/g,'\n'), vars).split('\n\n')
@@ -126,7 +129,7 @@ export function markdown(input, escape = true) {
     if (block.startsWith('> ')) {
       return `<blockquote>\n${block.replace(/^> /gm, '')}\n</blockquote>`
     }
-    if (/^<\w+>/.test(block)) {
+    if (/^<.+?>/.test(block)) {
       return block;
     }
     if (/\{\{ MARKDOWNSNIPPET\d+ \}\}/.test(block)) {
