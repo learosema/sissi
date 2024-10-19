@@ -7,6 +7,7 @@ import { getMime } from './mimes.js'
 
 const DEVSERVER_JS = `
 const eventSource = new EventSource('/_dev-events');
+window.addEventListener('beforeunload', () => eventSource.close(), false);
 eventSource.addEventListener('message', (e) => {
   const events = JSON.parse(e.data);
   for (const event of events) {
@@ -57,7 +58,10 @@ function serverSentEvents(req, res, eventEmitter) {
   }
   
   eventEmitter.on('watch-event', watchListener);
-  req.on('close', () => eventEmitter.off('watch-event', watchListener));
+  req.on('close', () => { 
+    eventEmitter.off('watch-event', watchListener);
+    res.end();
+  });
 }
 
 export function serve(eventEmitter = null, wwwRoot = 'dist', listenOptions) {

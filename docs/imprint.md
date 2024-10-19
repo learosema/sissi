@@ -5,23 +5,23 @@ layout: base.html
 
 ## Data according to § 5 TMG
 
-```txt
-Lea Rosema c/o adesso
-Willy-Brand-Straße 1
-
-20459 Hamburg
-Email: lea et lea.lgbt (replace ' et ' with '@')
-```
+<address>
+Lea Rosema c/o adesso<br>
+Willy-Brandt-Straße 1<br>
+<br>
+20459 Hamburg<br>
+Email: lea et lea.lgbt (replace ' et ' with '@')<br>
+</address>
 
 ## Person responsible for the content of `sissi-demo.netlify.app`
 
-```txt
-Lea Rosema c/o adesso
-Willy-Brand-Straße 1
-
-20459 Hamburg
+<address>
+Lea Rosema c/o adesso<br>
+Willy-Brandt-Straße 1<br>
+<br>
+20459 Hamburg<br>
 Email: lea et lea.lgbt (replace ' et ' with '@')
-```
+</address>
 
 Please don't hesitate to contact me if you have any questions regarding this blog. In respect of the environment, please refrain from sending traditional mail via paper.
 

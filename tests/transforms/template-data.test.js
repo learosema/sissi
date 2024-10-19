@@ -131,6 +131,18 @@ describe('template function', () => {
     assert.equal(await (template('{{ answer | async }}')(data, filters)), '42');
   });
 
+  it('should evaluate arbitrary expressions', async () => {
+    assert.equal(await (template('{{ 6*7 }}')({}, new Map())), '42');
+  });
+
+  it('should support lambdas', async () => {
+    const data = { people: () => ['Lea', 'Angela'], };
+    assert.equal(
+      await (template('{{ people().map(person => `<li>${person}</li>`).join("") | safe }}')(data, new Map())),
+      '<li>Lea</li><li>Angela</li>'
+    )
+  });
+
 });
 
 describe('handleTemplateFile function', () => {
