@@ -89,7 +89,7 @@ export function last(amount = 1) {
  * @returns escaped html
  */
 export function htmlentities(str) {
-  return str.replace(/\&/, '&amp;').replace(/</gm, '&lt;').replace(/>/gm, '&gt;');
+  return str?.replace(/\&/gm, '&amp;').replace(/</gm, '&lt;').replace(/>/gm, '&gt;');
 }
 
 /**
