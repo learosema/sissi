@@ -105,3 +105,7 @@ export async function async(asyncInput) {
   const result = await asyncInput;
   return (typeof result === 'function') ? result() : result;
 }
+
+export function each(array, callback) {
+  return array.forEach(callback).join('');
+}

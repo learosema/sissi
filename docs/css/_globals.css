@@ -31,3 +31,12 @@ main {
   margin-inline-end: auto;
   padding-block: 2rem;
 }
+
+address {
+  background: #000;
+  color: #fff;
+  border-radius: 0.25rem;
+  border: 1px solid #fff;
+  padding: 1rem;
+}
+
