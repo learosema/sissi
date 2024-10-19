@@ -6,7 +6,7 @@ export default function(config) {
   config.addPlugin(css);
   return {
     dir: {
-      input: 'demo',
+      input: 'docs',
       output: 'dist'
     }
   }
