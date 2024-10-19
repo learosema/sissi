@@ -1,8 +1,7 @@
 import EventEmitter from 'events';
 import { readFile } from 'fs';
-import { createServer, IncomingMessage, ServerResponse } from 'http';
+import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
-import url from "node:url";
 
 import { getMime } from './mimes.js'
 
@@ -61,38 +60,48 @@ function serverSentEvents(req, res, eventEmitter) {
   req.on('close', () => eventEmitter.off('watch-event', watchListener));
 }
 
-export function serve(eventEmitter = null, wwwRoot = 'dist') {
-  const port = process.env.PORT || 8000;
-  console.log(`[http]\tServer listening on http://localhost:${port}/`);
-  createServer((req, res) => {
-    const uri = url.parse(req.url).pathname;
-    const { send, sendError } = sendFactory(req, res);
-    if (eventEmitter && uri === '/_dev-events') {
-      serverSentEvents(req, res, eventEmitter);
-      return;
-    }
-    if (uri === '/_dev-events.js') {
-      send(200, DEVSERVER_JS, 'text/javascript');
-      return;
-    }
-    const dir = path.resolve(process.cwd(), wwwRoot);
-    const resourcePath = path.normalize(uri + (uri.endsWith('/') ? 'index.html' : ''));
-    if (resourcePath.split('/').includes('..')) {
-      sendError(404, 'Not Found');
-      return;
-    }
-    const filePath = path.join(dir, resourcePath);
-    readFile(filePath, (err, data) => {
-      if (err) {
+export function serve(eventEmitter = null, wwwRoot = 'dist', listenOptions) {
+  return new Promise((resolve) => {
+    const host = listenOptions?.host ?? process.env.HOST ?? 'localhost';
+    const port = listenOptions?.port ?? parseInt(process.env.PORT ?? '8000', 10);
+    const server = createServer((req, res) => {
+      const url = new URL(`http://${host}${port !== 80?`:${port}`:''}${req.url}`);
+      const { send, sendError } = sendFactory(req, res);
+      if (eventEmitter && url.pathname === '/_dev-events') {
+        serverSentEvents(req, res, eventEmitter);
+        return;
+      }
+      if (url.pathname === '/_dev-events.js') {
+        send(200, DEVSERVER_JS, 'text/javascript');
+        return;
+      }
+      const dir = path.resolve(process.cwd(), wwwRoot);
+      const resourcePath = path.normalize(url.pathname + (url.pathname.endsWith('/') ? 'index.html' : ''));
+      if (resourcePath.split('/').includes('..')) {
         sendError(404, 'Not Found');
         return;
       }
-      const mime = getMime(resourcePath);
-      if (data && mime === 'text/html') {
-        send(200, data.toString().replace('</body>', '<script src="/_dev-events.js"></script></body>'), mime);
+      const filePath = path.join(dir, path.normalize(resourcePath));
+      if (! filePath.startsWith(dir)) {
+        sendError(404, 'Not Found');
         return;
       }
-      send(200, data, mime);
+      readFile(filePath, (err, data) => {
+        if (err) {
+          sendError(404, 'Not Found');
+          return;
+        }
+        const mime = getMime(resourcePath);
+        if (data && mime === 'text/html') {
+          send(200, data.toString().replace('</body>', '<script src="/_dev-events.js"></script></body>'), mime);
+          return;
+        }
+        send(200, data, mime);
+      });
     });
-  }).listen(port);
+    server.listen({port, host, ...(listenOptions ?? {})}, () => {
+      console.log(`[http]\tServer listening on http://${host}:${port}/`);
+      resolve(server);
+    });
+  });
 }
