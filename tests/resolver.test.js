@@ -13,7 +13,7 @@ describe('resolve', () => {
   before(() => {
     config = new SissiConfig({
       dir: {
-        input: 'demo',
+        input: 'docs',
         output: 'dist',
       }
     });    
