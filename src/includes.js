@@ -30,7 +30,7 @@ export async function handleIncludes(
       console.warn(`Skipping Circular include detected in ${inputPath}: ${includeFile}`);
       continue;
     }
-    _dependants.push(file);
+    _dependants.push(includeFile);
     const include = await handleTemplateFile(config, {_dependants, ...(data ?? {})}, includeFile);
     includes.set(file, include);
   }

@@ -1,7 +1,7 @@
 import { handleIncludes } from './includes.js';
 import { markdown } from './transforms/markdown.js';
 
-const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\.]+)"[\s\r\n]*\/?>/g;
+const INCLUDE_REGEX = /<html-include[\s\r\n]*src="([\w\-\.]+?)"[\s\r\n]*\/?>/g;
 
 export default (config) => {
   config.addTemplateFormats('md');

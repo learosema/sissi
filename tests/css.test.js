@@ -16,10 +16,15 @@ describe('css plugin', () => {
     `@import "A.css";`,
     `@import "B.css";`,
   ].join('\n'));
-  virtualFileSystem.set('A.css', '.a { color: red; }');
-  virtualFileSystem.set('B.css', '.b { color: green; }');
+  virtualFileSystem.set('A.css', '.a { color: red; }\n');
+  virtualFileSystem.set('B.css', '.b { color: green; }\n');
   virtualFileSystem.set('C.css', '@import "styles.css";\n.c { color: blue; }\n');
   virtualFileSystem.set('layer.css', '@import "A.css" layer (reset);\n');
+
+  virtualFileSystem.set('cyclic.css', '@import "cyclic1.css";\n');
+  virtualFileSystem.set('cyclic1.css', '@import "cyclic2.css";\n');
+  virtualFileSystem.set('cyclic2.css', '@import "cyclic3.css";\n');
+  virtualFileSystem.set('cyclic3.css', '@import "cyclic1.css";\n');
 
   function dummyResolver(...paths) {
     const resource = path.normalize(path.join(...paths));
@@ -45,9 +50,9 @@ describe('css plugin', () => {
 
   it('should bundle css assets', async () => {
     const expectedFile = [
-      virtualFileSystem.get('A.css'),
-      virtualFileSystem.get('B.css')
-    ].join('\n');
+      virtualFileSystem.get('A.css').trim(),
+      virtualFileSystem.get('B.css').trim()
+    ].join('\n') + '\n';
 
     const transform = await config.extensions.get('css').compile(virtualFileSystem.get('styles.css'), 'styles.css');
     const result = await transform();
@@ -59,8 +64,8 @@ describe('css plugin', () => {
     const expectedFile = [
       '.a { color: red; }',
       '.b { color: green; }',
-      '.c { color: blue; }\n'
-    ].join('\n');
+      '.c { color: blue; }'
+    ].join('\n') + '\n';
 
     const transform = await config.extensions.get('css').compile(virtualFileSystem.get('C.css'), 'C.css');
     const result = await transform();
@@ -72,6 +77,15 @@ describe('css plugin', () => {
     const expectedFile = `@layer reset {\n${virtualFileSystem.get('A.css')}\n}\n`
 
     const transform = await config.extensions.get('css').compile(virtualFileSystem.get('layer.css'), 'layer.css');
+    const result = await transform();
+
+    assert.equal(result, expectedFile);
+  });
+
+  it('should handle cyclic dependencies without crashing', async () => {
+    const expectedFile = `@import url("cyclic1.css");\n`
+
+    const transform = await config.extensions.get('css').compile(virtualFileSystem.get('cyclic.css'), 'cyclic.css');
     const result = await transform();
 
     assert.equal(result, expectedFile);

@@ -1,6 +1,6 @@
 import { handleIncludes } from './includes.js';
 
-const INCLUDE_REGEX = /@import [\"\']([\w:\/\\\.\-]+?\.css)[\"\'](?:\s*layer\s*\((\w+)\))?;/g;
+const INCLUDE_REGEX = /@import [\"\']([\w:\/\\\.\-]+?\.css)[\"\'](?:\s*layer\s*\((\w+)\))?;\n?/g;
 
 export default (config) => {
   config.addTemplateFormats('css');
@@ -15,12 +15,12 @@ export default (config) => {
           (context, _, file, layer) => {
             const include = context.includes.get(file);
             if (!include || !include.content) {
-              return `@import url("${file}")${layer ?` layer(${layer});`:``};`;
+              return `@import url("${file}")${layer ?` layer(${layer});`:``};\n`;
             }
             if (! layer) {
               return include.content;
             }
-            return `@layer ${layer} {\n${include.content}\n}`;
+            return `@layer ${layer} {\n${include.content}\n}\n`;
           }
         );
       }
