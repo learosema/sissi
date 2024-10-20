@@ -115,7 +115,7 @@ export class Sissi {
     }
     if (! this.dryMode) {
       await mkdir(path.parse(tpl.filename).dir, {recursive: true});
-      await writeFile(tpl.filename, tpl.content, {});
+      await writeFile(tpl.filename, tpl.content || '', {});
     }
     return tpl.filename;
   }

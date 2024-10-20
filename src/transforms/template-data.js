@@ -48,9 +48,12 @@ export function parseFilterExpression(expr, ctx) {
  * Poor girl's handlebars
  * 
  * @param {string} str the template content
- * @returns {Promise<(data: any, filters: Map<string, function>) => string>} a function that takes a data object and returns the processed template
+ * @returns {Promise<(data: any, filters: Map<string, function>) => Promise<string>>} a function that takes a data object and returns the processed template
  */
 export function template(str) {
+  if (! str) {
+    return async () => str;
+  }
   const defaultFilters = new Map();
   let isSafe = false;
   defaultFilters.set('safe', (input) => { isSafe = true; return input; })
@@ -127,7 +130,7 @@ export async function handleTemplateFile(config, data, inputFile) {
     outputPath: absOutputFile,
     outputFileExtension: plugin.outputFileExtension || 'html',
     rawInput: content
-  };
+  }; 
   
   const { data: matterData, body } = frontmatter(content);
   const fileData = Object.assign({}, data, matterData);
@@ -138,7 +141,8 @@ export async function handleTemplateFile(config, data, inputFile) {
 
   const processor = await plugin.compile(body, inputFile);
 
-  let fileContent = await (template(await processor(fileData))(fileData, config.filters));
+  let fileContentTemplate = await (template(await processor(fileData)));
+  let fileContent = await fileContentTemplate(fileData, config.filters);
 
   if (fileData.layout) {
     const layoutFilePath = path.normalize(path.join(config.dir.layouts, fileData.layout));
