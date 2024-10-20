@@ -37,11 +37,39 @@ The code above will resolve to {{ meta.author }} (there is a meta.json in this s
 
 You can provide one or multiple filters via the pipe notation:
 
-- `safe`: do not escape HTML
-- `json`: stringify as JSON
-- `async`: resolves promises
-- `each`: apply a filter to each item in an array and concatenate the result
-- `number`: format as number
+### Do not escape (`safe`)
+
+By default, angle brackets are escaped to `&lt;` and `&gt;`, in order to avoid injections. You can turn this off by adding a safe pipe to your expression:
+
+```html
+{\{ content | safe }\}
+```
+
+### Serialize to JSON (`json`)
+
+You can serialize objects to JSON:
+
+```html
+{\{ meta | json }\}
+```
+
+### Resolve asynchronous JavaScript (`async`)
+
+```html
+{\{ fetchJson('https://yesno.wtf/api') | async }\}
+```
+
+### Iterate through array (`each`)
+
+```html
+{\{ fetchJson('people.json') | async | eachItem: (item) => `<li>${item}</li>` }\}
+```
+
+### Work in progress
+
+The following are unpolished and subject to change.
+
+- `numberFormat`: format as number
 - `currency`: format as currency
 - `limit`: limit an array
 - `reverse`: reverse an array
@@ -52,11 +80,15 @@ You can add custom filters inside your config:
 
 ```js
 config.addFilter('SCREAM', (str) => str.toUpperCase());
-config.addFilter('piratify', (str, prefix = 'Yo-ho-ho', suffix = 'yarrr') => `${prefix}! ${str}, ${suffix}!`)
+config.addFilter('piratify', 
+  (str, prefix = 'Yo-ho-ho', suffix = 'yarrr') => 
+    `${prefix}! ${str}, ${suffix}!`
+);
 ```
 
 ```html
-{\{ meta.author | SCREAM }\} resolves to LEA ROSEMA
+{\{ meta.author | SCREAM }\}
+resolves to LEA ROSEMA
 {\{ "Hello " + meta.author | piratify: 'Aye' }\} resolves to "Aye! Hello Lea Rosema, yarrr!"
 ```
 
@@ -89,13 +121,17 @@ This is why there is the async filter. You can combine it with the `each` filter
 
 ```js
 // _data/ListItem.js
-export default function ListItem(person) {
-  return `<li>${person}</li>`
+export default function ListItem(item) {
+  return `<li>${item}</li>`
 }
 ```
 
 ```html
 <ul>
-  {\{ fetchJson('people') | async | each: ListItem }\}
+  {\{ fetchJson('people') | async | each: ListItem }\}
 </ul>
 ```
+
+The async filter resolves the promise of the fetch request. When the result is an array,
+the `each` operator takes each item, passes it to the ListItem
+function and then concatenates the result.

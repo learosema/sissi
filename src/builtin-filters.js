@@ -107,5 +107,5 @@ export async function async(asyncInput) {
 }
 
 export function each(array, callback) {
-  return array.forEach(callback).join('');
+  return array.map(callback).join('');
 }
